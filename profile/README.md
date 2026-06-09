@@ -1,0 +1,804 @@
+![MediaOps Platform](https://media-ops.net/assets/mediaops_banner_1920x640_dark.png)
+
+# MediaOps Platform
+
+MediaOps Platform is an agent-driven operating system for producing,
+validating, publishing, and managing social media content.
+
+The project is designed to run with agent environments (Codex and Claude
+Code currently supported). This repository contains the agent rules,
+pipelines, runtime scripts, safe templates, and operator documentation. The
+actual work is performed in the chosen agent environment with access to a
+local workspace.
+
+MediaOps is not only a content generator. It is a controlled production
+workflow for:
+
+- finding and preparing ideas;
+- preparing post text, scripts, generated images, and video packages;
+- assembling short-form videos;
+- checking packages before publication;
+- publishing or scheduling through supported platform APIs;
+- reading back publication state;
+- running controlled audience comment engagement cycles;
+- archiving verified successful packages;
+- keeping agent work reproducible through pipelines and task contracts.
+
+The goal is to replace ad-hoc manual production with a structured agent system
+where every role owns a clear part of the workflow and every handoff is backed
+by files, reports, and rules.
+
+## Why It Exists
+
+MediaOps Platform is built for operators and small teams that produce content
+regularly across multiple social platforms and want to:
+
+- publish posts, Shorts, and Reels faster;
+- reduce mistakes before API writes;
+- repeat successful formats without rebuilding every step manually;
+- split work between search, preparation, editing, QA, and publishing agents;
+- keep routine audience replies accountable and logged;
+- operate multiple platform accounts in the same system with per-account
+  topic policy and per-destination routing;
+- run locally or with an optional VPS worker;
+- switch between agent environments (Codex / Claude Code) without losing
+  project state;
+- keep secrets, runtime configuration, and production artifacts outside the
+  repository;
+- move the system to another machine or operator without carrying private local
+  state.
+
+## Main Advantage
+
+The main advantage of MediaOps Platform is flexibility. The system is not locked
+to one niche, one content style, or one publishing route.
+
+An operator can adapt it to their own topics, accounts, editing style, post
+format, platforms, and production rules without rebuilding the whole codebase
+from scratch.
+
+It is not a bot for a single niche. It is an adjustable content production
+factory: the operator can change the niche, visual style, sources, scenario
+rules, publication route, and connected agents for each project.
+
+## What Is Included
+
+The repository includes:
+
+- rules and pipeline files for all active agents;
+- shared conventions for paths, contracts, states, and reports;
+- approved runtime scripts for local and VPS execution;
+- safe configuration templates;
+- task-bus conventions;
+- example task contracts;
+- new-machine bootstrap logic;
+- operator documentation;
+- systemd examples for VPS services and timers;
+- state schema and migration helpers.
+
+Real work data, secrets, tokens, active runtime configuration, generated
+packages, archives, VPN configs, and production state must live outside this
+repository.
+
+## System Requirements
+
+### Supported Operating Systems
+
+Primary local production target:
+
+- Windows 10/11;
+- PowerShell 7 for UTF-8 and Cyrillic-safe command output;
+- Windows Task Scheduler for local delayed Instagram publishing;
+- Windows OpenSSH client when VPS mode is used.
+
+VPS mode:
+
+- Linux VPS with systemd;
+- recommended OS class: Ubuntu LTS or Debian stable;
+- SSH access as a normal user;
+- sudo/root access only for explicitly approved package, service, or system
+  dependency changes.
+
+Not primary production targets:
+
+- macOS/Linux desktop may be used for repository review or partial development,
+  but the current local production flow is Windows-oriented;
+- WSL is not a replacement for Windows Task Scheduler in the local Instagram
+  flow;
+- mobile operating systems are not supported.
+
+### Hardware
+
+Minimum practical local setup:
+
+- CPU-only mode is supported;
+- GPU is optional;
+- 16 GB RAM is a practical minimum for light workflows;
+- 32 GB RAM or more is recommended for active video work;
+- storage requirements depend on source video volume and archive retention, but
+  tens or hundreds of GB are realistic for comfortable operation.
+
+GPU acceleration is optional. If present, Architect should verify CUDA,
+PyTorch, Florence-2, and any optional reframe tooling before enabling GPU mode.
+Without a GPU, the system should continue through CPU mode and/or API fallback
+where configured.
+
+### Required Local Software
+
+Baseline:
+
+- An agent environment with file/shell access (Codex or Claude Code). Active
+  production work, image generation, and long agent sessions may require a
+  higher subscription tier;
+- Git;
+- Python 3.10+;
+- PowerShell 7 (`pwsh`);
+- FFmpeg and FFprobe;
+- yt-dlp;
+- Python dependencies from `requirements/`;
+- local runtime folders for `{CONTENT_WORK_DIR}` and `{CONTENT_ARCHIVE_DIR}`;
+- active runtime config based on a safe template;
+- external secrets and tokens folder outside the repository.
+
+For video workflows:
+
+- FFmpeg/FFprobe are required;
+- yt-dlp is required for downloading source videos from supported URLs;
+- PySceneDetect and video dependencies from
+  `requirements/requirements-video.txt`;
+- Florence-2 dependencies from `requirements/requirements-florence2.txt` when
+  the local visual alignment provider is used;
+- faster-whisper is optional for local transcription;
+- Node.js 20+ is optional for future Node/Remotion-like helpers.
+
+For post workflows:
+
+- Python dependencies from `requirements/requirements-post.txt`;
+- image generation/processing access according to the active environment;
+- WireGuard is optional when a VPN fallback is needed for source image
+  retrieval.
+
+For repository regression checks:
+
+- test-only Python dependencies from `requirements/requirements-test.txt`;
+- run runtime regression tests with `python -m pytest tests/runtime/ -v`.
+
+For publishing:
+
+- platform API credentials outside the repository;
+- provider keys only for features the operator actually enables;
+- API publishing can be disabled for platforms that should use manual-only
+  publication.
+
+### Required VPS Software
+
+For VPS worker mode:
+
+- Linux VPS with systemd;
+- Python 3.10+;
+- Git or a deployed copy of approved runtime scripts;
+- SSH server;
+- required server-side secrets;
+- systemd service/timer for the Instagram worker and status/reporting services;
+- minimal Telegram bot/status service when the operator wants operational
+  status through Telegram;
+- network access to Meta/Instagram API and Cloudflare R2;
+- enough space for temporary plan, log, and state files.
+
+FFmpeg on the VPS is required only for server-side tasks that actually process
+media there. The current Instagram VPS flow primarily uses the server as a
+worker for staged media, plan state, API publish, and verification.
+
+If the VPS is later used for heavier video processing or ready-video streaming,
+choose a stronger server than the minimal worker instance.
+
+## Supported Platforms
+
+Current focus:
+
+- YouTube Shorts / video publishing flow;
+- Facebook video publishing;
+- Facebook photo and text posts;
+- Instagram Reels through local Windows flow or VPS worker flow;
+- Instagram feed posts through local Windows flow or VPS worker flow;
+- audience comment engagement through enabled Comment Agent platform profiles.
+
+The system already includes:
+
+- local operation mode;
+- minimal VPS worker support for delayed Instagram publishing;
+- basic Telegram bot/status service support for operational state;
+- R2 as temporary staging for the Instagram/VPS flow;
+- read-back and sync-back after publishing;
+- platform delete/reconciliation flow with explicit destructive confirmation.
+
+Platforms are connected through runtime configuration. The repository must not
+contain real account names, API tokens, OAuth secrets, public IDs, server IPs,
+or private operator paths.
+
+## How It Works
+
+```mermaid
+flowchart LR
+    Operator["Operator"] --> Orchestrator["Orchestrator"]
+    Operator -.-> Architect["Architect"]
+    Orchestrator --> Search["Search Agent"]
+    Orchestrator --> Post["Post Agent"]
+    Orchestrator --> Video["Video Agent"]
+    Video --> VideoEdit["Video Edit Agent"]
+    Orchestrator --> QA["QA Agent"]
+    QA --> Publisher["Publisher Agent"]
+    Publisher --> Platforms["YouTube · Facebook · Instagram"]
+    Orchestrator --> Comment["Comment Agent"]
+    Comment --> Platforms
+```
+
+Core principles:
+
+- pipeline is law: agents do not improvise outside their pipeline;
+- task contracts: handoffs are written as machine-readable JSON contracts;
+- role boundaries: every agent owns only its own part of the workflow;
+- QA gate: ready packages are checked before Publisher when the execution mode
+  requires it;
+- explicit platform scope: Instagram and other platforms are not silently added
+  by vague "all platforms" wording;
+- runtime separation: the repository contains source rules and scripts, while
+  production data lives in runtime, work, and archive roots.
+
+## Project Maturity
+
+MediaOps Platform is currently a private pre-release / production foundation.
+
+Already available:
+
+- baseline agent architecture;
+- production pipelines for active roles;
+- task-bus workflow;
+- Facebook post/video flow;
+- Post Agent profile-extension foundation;
+- YouTube video flow;
+- Instagram local/VPS foundation;
+- Comment Agent base/profile engagement foundation;
+- QA gate;
+- release sanitization;
+- bootstrap foundation;
+- approved runtime scripts.
+
+Practically, this means:
+
+- the system can be used by an operator who understands the workflow;
+- new operators should start with Architect bootstrap and dry-run checks;
+- production publishing should not start before runtime config, credentials,
+  and platform access are configured;
+- integrations can be disabled or run manual-only when credentials or VPS are
+  not configured.
+
+## Repository Structure
+
+- `AGENTS.md` - common rules for all agents.
+- `pipelines/` - source-of-truth workflow files for agent roles.
+- `conventions/` - shared path, state, contract, and reporting conventions.
+- `rules/` - specialized shared rules.
+- `policies/` - repository-wide technical and dependency policies.
+- `checklists/` - production-scoped checklists referenced by role pipelines.
+- `runtime/approved/` - approved runtime scripts that may be deployed into the
+  active runtime folder.
+- `runtime/assets/` - bundled runtime resources (fonts, etc.).
+- `runtime/systemd/examples/` - VPS service and timer examples.
+- `settings/` - safe configuration templates.
+- `examples/` - task contract, environment, and toolchain examples.
+- `requirements/` - Python dependency manifests.
+- `readMe/` - operator documentation.
+- `docs/architecture/` - design notes, migration notes, and future ideas.
+- `state/` - safe state schema/templates (canonical state DB schema).
+- `tools/` - development or migration helper tools.
+
+`readMe/` helps the human operator, but it does not replace the pipelines. For
+agents, the source of truth remains `AGENTS.md`, the role pipeline, the task
+contract, and the active runtime config.
+
+## Configuration Model
+
+MediaOps separates repository source from active runtime.
+
+In the repository:
+
+- rules;
+- pipeline files;
+- templates;
+- approved runtime scripts;
+- documentation;
+- safe examples.
+
+In active runtime:
+
+- `contentpublisher.config.json`;
+- real work/archive paths;
+- real destination mappings;
+- task bus;
+- generated packages;
+- logs/state/reports;
+- deployed runtime scripts.
+
+In archive/secrets:
+
+- API credentials;
+- OAuth tokens;
+- R2 credentials;
+- provider keys;
+- historical published packages;
+- durable state.
+
+This separation lets the same repository release be deployed on another machine
+or for another operator without carrying private accounts, IPs, tokens, or local
+paths.
+
+## Deployment Modes
+
+### Local Only
+
+The operator works on a Windows machine. This is suitable for content
+preparation, manual control, and publications that do not need an autonomous
+server-side worker.
+
+### Local + API Publishing
+
+Content is prepared locally. Publisher Agent uses platform API credentials for
+publishing or scheduling. This requires correctly configured external
+secrets/tokens.
+
+### Local + Windows Scheduler
+
+Used for local delayed Instagram flow. Windows Task Scheduler is a trigger-only
+mechanism and does not replace Publisher or Orchestrator logic.
+
+### Local + VPS Worker
+
+The local machine prepares plans and staging. The VPS worker handles delayed
+Instagram publishing, verification, and cleanup. A sync-back task returns the
+final state to local runtime.
+
+In the current foundation version, VPS support already includes the minimal
+working contour: Instagram worker, status/reporting service, and a Telegram
+bot/status interface for operational control. Heavier server-side scenarios,
+such as streaming or publishing ready videos to YouTube and Facebook through a
+VPS worker, are roadmap items.
+
+### Manual-Only Publishing
+
+If API publishing is not needed or credentials are not configured, the system
+can prepare publish-ready packages while the operator publishes manually. The
+Publisher Agent for that platform can be disabled or limited.
+
+## Agents
+
+### Architect
+
+Architect owns architecture, pipelines, approved runtime scripts, operator
+documentation, release preparation, and safety of changes.
+
+It can:
+
+- assess new functionality for risk, cost, and production impact;
+- change pipelines and repository source of truth;
+- prepare bootstrap/new-machine flows;
+- fix approved runtime scripts;
+- run readiness/smoke checks;
+- prepare release and distribution repository work;
+- keep secrets and local operator values out of the repository.
+
+Architect must not run production publishing, recovery, archive, VPS changes,
+sync, or sudo/root work without explicit operator instruction.
+
+### Orchestrator Agent
+
+Orchestrator owns the production route.
+
+It can:
+
+- turn operator requests into agent tasks;
+- choose the required agents;
+- create task contracts;
+- track gate transitions;
+- return packages for narrow fixes after QA failure;
+- prepare Publisher-ready handoffs;
+- close successful packages through archive flow.
+
+Orchestrator should not do specialized agent work itself.
+
+### Search Agent
+
+Search Agent owns default post/news discovery through the `post_news` profile.
+Operator-specific discovery workflows are separate Search Profile Extensions
+stored outside the repository under the runtime work root.
+
+It can:
+
+- find news and articles for post production;
+- prepare readable candidate lists;
+- check basic source quality;
+- update search/news cache through approved runtime paths;
+- stop with `search_profile_unbound` when a custom Search Agent has no default
+  profile or approved extension binding.
+
+Search Agent does not publish and does not modify runtime settings. Custom
+profiles are runtime extensions created by Architect on operator request, not
+default repository roles.
+
+### Post Agent
+
+Post Agent owns Facebook photo and text post packages. Its default format is
+`standard_news_post`; optional operator-specific preparation formats are Post
+Profile Extensions stored outside the repository under the runtime work root.
+
+It can:
+
+- prepare final post text;
+- generate images for posts through connected AI services;
+- use and process source visuals when the workflow requires them;
+- apply readable text overlays;
+- run text preflight before image generation, including semantic review,
+  morphology, stress marks, abbreviations, numbers, and pronunciation risks;
+- prepare a package for QA/Publisher;
+- follow hashtag, overlay, and publication metadata rules.
+- stop with `post_profile_unbound` when a profile-backed task has no approved
+  bound extension.
+
+The result is a ready post package, not the publication itself.
+
+### Video Agent
+
+Video Agent owns video content preparation before editing.
+
+It can:
+
+- prepare narration/script;
+- work with video package metadata;
+- prepare source maps and edit maps;
+- prepare Type 1 manual-edit and Type 1 automontage input;
+- prepare Type 2 Reference Remake logic: reference structure, translated/adapted
+  narration, replacement clip selection, and beat-level cutting;
+- prepare Type 3 Revoice input: transcribe and adapt a Russian voiceover for an
+  existing video while keeping its visual.
+
+Video Agent should not final-render a video when that is Video Edit Agent's
+responsibility.
+
+### Video Edit Agent
+
+Video Edit Agent owns final assembly and render.
+
+It can:
+
+- assemble Shorts/Reels from prepared clips and edit maps;
+- handle TTS/audio;
+- add music, branding, and final visual elements;
+- perform vertical reframe/crop;
+- check duration, framing, readability, and metadata cleanup;
+- prepare final video packages for QA/Publisher.
+
+For Type 2, Video Edit Agent should assemble a near-remake from Video Agent's
+map rather than turning the task into free montage.
+
+Supported video montage types:
+
+- Type 1 Manual - the operator does the final montage from the prepared clip
+  package; agents stop at package preparation.
+- Type 1 Automontage - a short video assembled by Video Edit Agent from the
+  prepared clips and edit map around approved narration, with vertical framing,
+  music, branding, and final render.
+- Type 2 Reference Remake - a new video built from the structure and pacing of a
+  reference video, replacing its visual sequence with the operator's own sources
+  (reference frames are never reused).
+- Type 3 Revoice - an existing video re-voiced with new Russian narration
+  (original audio replaced, visual kept); routed to Facebook video and Instagram
+  Reels only, not YouTube.
+
+### QA Agent
+
+QA Agent owns package validation before publication.
+
+It can:
+
+- validate machine-readable contracts;
+- check required artifacts;
+- check package metadata and routing;
+- catch blockers before Publisher;
+- check between agents in deep mode;
+- run pre-Publisher QA in balanced mode;
+- return `qa_passed` or a narrow blocker list.
+
+QA Agent should not run heavy media operations unnecessarily and should not
+replace the editor or montage agent.
+
+### Publisher Agent
+
+Publisher Agent owns publication, scheduling, and read-back.
+
+It can:
+
+- validate Publisher task contracts;
+- publish or schedule through supported runtime scripts;
+- perform platform API verification;
+- work with Facebook video/photo posts;
+- work with YouTube video flow;
+- work with Instagram local/VPS flow;
+- write reports;
+- refuse destructive platform actions without explicit confirmation.
+
+Publisher Agent should not patch production packages in place when that would
+violate the pipeline. On blocker, it reports and stops.
+
+### Comment Agent
+
+Comment Agent owns routine audience engagement for supported comment platforms.
+
+The role is split into:
+
+- shared Comment Agent base rules for scan, de-duplication, reply selection,
+  moderation vocabulary, and reports;
+- platform profiles that provide API-specific fetch, auth, state, and
+  moderation mappings.
+
+Current executable platform profiles:
+
+- `youtube_comments` for operator-owned YouTube channels.
+- `facebook_comments` for operator-owned Facebook Pages.
+
+Active runtime config controls participation per account and platform with
+`comment_engagement.<platform>.enabled`. A platform profile that is disabled,
+missing, or unsupported must block before API calls.
+
+It can:
+
+- fetch recent comments through a supported platform profile;
+- compare fetched comments against local state;
+- reply to useful comments when the task contract allows automatic replies;
+- match reply language to the comment language when clear;
+- record comment and action state in the local database;
+- report moderation candidates;
+- run hard-rule comment-level moderation only when explicitly enabled per
+  destination in the active runtime config. Author bans are a separate opt-in
+  policy only when a platform profile supports them.
+
+Comment Agent does not publish videos, schedule content, change metadata, pin
+comments, archive packages, touch VPS/R2 state, or edit repository files.
+
+## Features
+
+### Posts
+
+- Facebook photo and text post package preparation;
+- image generation for post visuals;
+- text overlays;
+- Facebook hashtags;
+- QA before publishing;
+- publication through the approved runtime publisher.
+
+### Text Preparation
+
+- morphological and editorial preflight before image generation, scripts, and
+  narration;
+- stress-mark and pronunciation-risk checks;
+- simplification of complex technical identifiers when that reduces TTS risk;
+- preserving normal spelling for brands, models, and common names when TTS
+  handles them correctly;
+- preparing text so image, narration, and publication caption work as one
+  package.
+
+### Video
+
+- Shorts/Reels production workflow;
+- multiple montage types;
+- TTS/narration handling;
+- source maps;
+- clip plans;
+- reframe/crop;
+- metadata cleanup before publishing;
+- YouTube/Facebook/Instagram routing.
+
+MediaOps helps organize and assemble videos, but it does not guarantee the same
+quality for every niche. Final quality depends on source materials, topic
+complexity, editing style, available hardware, connected APIs/providers, and
+how well the operator adapts the rules to the niche.
+
+### Instagram VPS Flow
+
+- durable Instagram publish plan preparation;
+- media staging to R2;
+- deferred VPS worker publication;
+- sync-back after slots;
+- wake-up driver through the approved helper;
+- protection against treating a pending JSON file as a real monitor.
+
+### VPS And Telegram Operations
+
+- minimal VPS worker support for Instagram flow;
+- server-side status/reporting service;
+- Telegram bot/status interface for viewing plan and task state;
+- sync-back from VPS state into local runtime;
+- foundation for future server-side workflows.
+
+### Comment Engagement
+
+- shared Comment Agent base convention plus platform profiles;
+- scheduled cycles for enabled comment profiles with local de-duplication by
+  comment ID;
+- automatic replies when the task contract allows them;
+- report-only moderation by default; auto-moderation for exact comments is
+  per-destination and gated by explicit operator authorization stored in the
+  active runtime config;
+- durable local records for scan runs, threads, comments, and actions;
+- language-aware replies without exposing internal pipeline details;
+- current executable profiles: YouTube comments and Facebook Page comments;
+  additional platform profiles require Architect implementation before use.
+
+### Operations
+
+- task bus;
+- completed/failed reports;
+- archive closeout;
+- environment doctor;
+- clean-machine bootstrap;
+- optional VPS services;
+- Telegram/status bot support through runtime tools.
+
+## Task Lifecycle
+
+Typical production flow:
+
+1. The operator gives a task to Orchestrator.
+2. Orchestrator defines the format, platforms, execution mode, and required
+   agents.
+3. Search Agent finds sources or topics when needed.
+4. Post Agent or Video Agent prepares the content package.
+5. Video Edit Agent assembles the final video when the task is video-based.
+6. QA Agent checks package, metadata, and contracts.
+7. Orchestrator creates a Publisher task only after QA passes or an explicit
+   fast-mode QA skip is authorized.
+8. Publisher Agent publishes or schedules and writes a report.
+9. Orchestrator closes and archives the successful package after the required
+   verification.
+
+Comment cycles are separate engagement closeouts. They can be scheduled by
+Orchestrator or Architect after publication, but they are not a publication gate
+and must not change video metadata or archive state.
+
+When a blocker appears, the agent writes a report and returns the task for a
+narrow fix. The system should not invent success or publish before the required
+gate.
+
+## Execution Modes
+
+- `balanced` - default mode for normal production work.
+- `fast` - only when explicitly selected by the operator and only with explicit
+  QA-skip authorization where relevant.
+- `deep` - stronger verification for complex tasks, failures, recovery, or when
+  the operator requests deep validation.
+
+## Readiness Checklist
+
+Before production work:
+
+- Architect initialization;
+- environment doctor;
+- config validation;
+- toolchain validation;
+- secrets/tokens presence check without printing values;
+- role-specific readiness for needed agents;
+- dry-run or test package without publishing;
+- explicit platform scope before the first publication.
+
+For release/distribution work:
+
+- leak scan for real accounts, IPs, local paths, and secrets;
+- JSON template validation;
+- Python compile for approved runtime scripts;
+- sync-back contract dry-run when Instagram VPS flow is enabled;
+- README/operator documentation review;
+- check that active runtime config was not committed.
+
+## Local Mode And VPS Mode
+
+Local mode is suitable when the operator:
+
+- wants to control publication manually;
+- uses Windows Task Scheduler;
+- does not want to maintain a server;
+- works with platforms where local execution is enough.
+
+VPS mode is useful when the operator:
+
+- wants autonomous delayed Instagram publications;
+- wants R2 staging;
+- plans to run a stable background worker;
+- wants status/sync-back without manually watching every slot;
+- may later need heavier server-side workflows.
+
+If the VPS will be used for ready-video processing or streaming, choose a
+stronger server than the minimal worker setup.
+
+## What This Project Does Not Do
+
+MediaOps is not:
+
+- a SaaS web dashboard out of the box;
+- a fully autonomous system without an operator;
+- a way to bypass platform rules;
+- a guarantee of monetization;
+- protection against account blocks, copyright claims, or API policy changes;
+- a secret storage system;
+- a universal non-linear video editor;
+- a replacement for human judgment in difficult niches where taste, editing,
+  and manual review matter.
+
+The system reduces routine and mistakes, but the operator remains responsible
+for platform scope, rights to materials, publication quality, and platform
+policy compliance.
+
+## Costs And External Services
+
+Actual cost depends on enabled integrations.
+
+Potential paid components:
+
+- VPS;
+- Cloudflare R2 or another object storage provider;
+- OpenAI/API providers;
+- ElevenLabs or another TTS provider;
+- video generation providers;
+- paid VPN;
+- paid proxies or extra tools;
+- platform developer/business verification costs where applicable.
+
+Before a new feature is enabled, Architect should assess:
+
+- API support;
+- permissions;
+- direct and indirect cost;
+- production-flow impact;
+- secret safety;
+- maintenance complexity;
+- rollback plan.
+
+## Roadmap
+
+The platform evolves like a content operating system:
+
+- **Analytics Agent** — analyzes key retention moments and audience response; recommends improvements to how other agents work.
+- **Niche-specific Scenario Agent** — niche scripts and donor-video flow for long sources.
+- **Codex SDK / Claude Agent SDK integration** — agents coordinate automatically: the operator sets a task and gets the result.
+- **Telegram as a new publication destination** alongside YouTube, Facebook, Instagram.
+- **Own VPS streaming service** — an agent runs YouTube and Facebook live broadcasts from pre-prepared playlists, without a local machine.
+- **Cloud Central State** — shared state in an external database (Cloudflare D1 or VPS) to work from several computers at once.
+
+## Security
+
+The repository must not contain:
+
+- API tokens;
+- OAuth secrets;
+- real `.env` files;
+- private VPN profiles;
+- real server IPs;
+- private SSH paths;
+- public account names when they are used as runtime routing;
+- production package state;
+- active platform IDs tied to a specific operator.
+
+Sensitive values belong in active runtime config, external secret folders, or
+platform provider storage outside the repository.
+
+## License
+
+MediaOps Platform is distributed under a private commercial source-available
+license.
+
+Authorized operators may use and modify the system for their own internal
+content operations. Redistribution, resale, public publishing, sublicensing,
+sharing repository access, or offering MediaOps as a competing hosted service is
+not permitted without written permission from the project owner.
+
+The software is provided without warranty. Operators are responsible for their
+own platform accounts, content rights, credentials, API usage, costs, and
+compliance with platform policies.
