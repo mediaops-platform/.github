@@ -111,8 +111,7 @@ Not primary production targets:
 
 Minimum practical local setup:
 
-- CPU-only mode is supported;
-- GPU is optional;
+- runs on CPU, with an optional GPU for acceleration;
 - 16 GB RAM is a practical minimum for light workflows;
 - 32 GB RAM or more is recommended for active video work;
 - storage requirements depend on source video volume and archive retention, but
@@ -132,36 +131,30 @@ Baseline:
   higher subscription tier;
 - Git;
 - Python 3.10+;
-- PowerShell 7 (`pwsh`);
+- PowerShell 7;
 - FFmpeg and FFprobe;
 - yt-dlp;
-- Python dependencies from `requirements/`;
-- local runtime folders for `{CONTENT_WORK_DIR}` and `{CONTENT_ARCHIVE_DIR}`;
+- the bundled Python dependencies;
+- local work and archive folders;
 - active runtime config based on a safe template;
-- external secrets and tokens folder outside the repository.
+- an external secrets and tokens folder outside the repository.
 
 For video workflows:
 
 - FFmpeg/FFprobe are required;
 - yt-dlp is required for downloading source videos from supported URLs;
-- PySceneDetect and video dependencies from
-  `requirements/requirements-video.txt`;
-- Florence-2 dependencies from `requirements/requirements-florence2.txt` when
-  the local visual alignment provider is used;
+- PySceneDetect and the bundled video dependencies;
+- optional Florence-2 dependencies when the local visual-alignment provider is
+  used;
 - faster-whisper is optional for local transcription;
 - Node.js 20+ is optional for future Node/Remotion-like helpers.
 
 For post workflows:
 
-- Python dependencies from `requirements/requirements-post.txt`;
+- the bundled post dependencies;
 - image generation/processing access according to the active environment;
 - WireGuard is optional when a VPN fallback is needed for source image
   retrieval.
-
-For repository regression checks:
-
-- test-only Python dependencies from `requirements/requirements-test.txt`;
-- run runtime regression tests with `python -m pytest tests/runtime/ -v`.
 
 For publishing:
 
@@ -312,7 +305,7 @@ In the repository:
 
 In active runtime:
 
-- `contentpublisher.config.json`;
+- the active runtime configuration;
 - real work/archive paths;
 - real destination mappings;
 - task bus;
@@ -408,9 +401,9 @@ Orchestrator should not do specialized agent work itself.
 
 ### Search Agent
 
-Search Agent owns default post/news discovery through the `post_news` profile.
-Operator-specific discovery workflows are separate Search Profile Extensions
-stored outside the repository under the runtime work root.
+Search Agent owns default post/news discovery. Operator-specific discovery
+workflows are separate, stored outside the repository under the runtime work
+root.
 
 It can:
 
@@ -418,8 +411,7 @@ It can:
 - prepare readable candidate lists;
 - check basic source quality;
 - update search/news cache through approved runtime paths;
-- stop with `search_profile_unbound` when a custom Search Agent has no default
-  profile or approved extension binding.
+- stop safely when a custom Search Agent has no bound discovery profile.
 
 Search Agent does not publish and does not modify runtime settings. Custom
 profiles are runtime extensions created by Architect on operator request, not
@@ -427,9 +419,9 @@ default repository roles.
 
 ### Post Agent
 
-Post Agent owns Facebook photo and text post packages. Its default format is
-`standard_news_post`; optional operator-specific preparation formats are Post
-Profile Extensions stored outside the repository under the runtime work root.
+Post Agent owns Facebook photo and text post packages. It ships with a default
+news-post format; optional operator-specific preparation formats are stored
+outside the repository under the runtime work root.
 
 It can:
 
@@ -441,8 +433,7 @@ It can:
   morphology, stress marks, abbreviations, numbers, and pronunciation risks;
 - prepare a package for QA/Publisher;
 - follow hashtag, overlay, and publication metadata rules.
-- stop with `post_profile_unbound` when a profile-backed task has no approved
-  bound extension.
+- stop safely when a profile-backed task has no bound extension.
 
 The result is a ready post package, not the publication itself.
 
@@ -506,7 +497,7 @@ It can:
 - catch blockers before Publisher;
 - check between agents in deep mode;
 - run pre-Publisher QA in balanced mode;
-- return `qa_passed` or a narrow blocker list.
+- return a pass result or a narrow blocker list.
 
 QA Agent should not run heavy media operations unnecessarily and should not
 replace the editor or montage agent.
@@ -542,12 +533,12 @@ The role is split into:
 
 Current executable platform profiles:
 
-- `youtube_comments` for operator-owned YouTube channels.
-- `facebook_comments` for operator-owned Facebook Pages.
+- YouTube comments for operator-owned channels.
+- Facebook Page comments for operator-owned Pages.
 
-Active runtime config controls participation per account and platform with
-`comment_engagement.<platform>.enabled`. A platform profile that is disabled,
-missing, or unsupported must block before API calls.
+Active runtime config controls participation per account and platform. A
+platform profile that is disabled, missing, or unsupported must block before
+API calls.
 
 It can:
 
