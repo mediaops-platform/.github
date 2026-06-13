@@ -5,6 +5,8 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
+**Latest release: [v0.1.1](#releases) — Multi-account video publishing (2026-06-12)**
+
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
 pipelines, runtime scripts, safe templates, and operator documentation. The
@@ -265,6 +267,30 @@ Practically, this means:
   and platform access are configured;
 - integrations can be disabled or run manual-only when credentials or VPS are
   not configured.
+
+## Releases
+
+### v0.1.1 — Multi-account video publishing (2026-06-12)
+
+- **Multi-account video** — one machine runs several brands/accounts. The
+  account is resolved from the destination; one contract = one account
+  (credential isolation). Per-account YouTube channel + token (with a
+  pre-upload channel assert so a video never lands on the wrong channel),
+  Facebook page, YouTube title hashtag suffix, playlist map, and branding.
+- **Account-first archive layout** (`<alias>/<date>`); shared post run
+  artifacts kept separate.
+- **Per-account default music track and TTS voice** (global when unset).
+- **New "publish operator-supplied finished video" contract**
+  (`operator_final`) — provide a ready local mp4 plus slot/platforms; the
+  agent prepares metadata and publishes, with no montage or voiceover.
+- **Fast mode** — publish without a separate QA agent, via an Orchestrator
+  inline preflight.
+- **Intent-based approval gates** (platform-content deletion stays strict).
+
+### v0.1.0 (2026-06-08)
+
+- Initial release: generic core, new-machine onboarding setup-driver,
+  production-secret protocol.
 
 ## Repository Structure
 
