@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.1.1](#releases) — Multi-account video publishing (2026-06-12)**
+**Latest release: [v0.1.2](#releases) — Scenario/Video Agent split (2026-06-19)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -219,8 +219,8 @@ flowchart LR
     Operator -.-> Architect["Architect"]
     Orchestrator --> Search["Search Agent"]
     Orchestrator --> Post["Post Agent"]
-    Orchestrator --> Video["Video Agent"]
-    Video --> VideoEdit["Video Edit Agent"]
+    Orchestrator --> Scenario["Scenario Agent"]
+    Scenario --> Video["Video Agent"]
     Orchestrator --> QA["QA Agent"]
     QA --> Publisher["Publisher Agent"]
     Publisher --> Platforms["YouTube · Facebook · Instagram"]
@@ -269,6 +269,20 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.1.2 — Scenario/Video Agent split (2026-06-19)
+
+- **Scenario/Video Agent split** — the former video edit agent is split into a
+  Scenario Agent (text: source understanding, narration, ElevenLabs TTS +
+  alignment, metadata; no clips, no vision) and a Video Agent (editor and sole
+  vision owner: scene detection, contact sheets, clip map, cut, framing/reframe,
+  audio mix, render). Narration (Gate 1) and audio (Gate 2) are Scenario-owned;
+  final video (Gate 3) is Video-owned.
+- **Factory is the single source of contracts** — drift is a blocker.
+- **Type 2 reference-remake matcher** rebuilt on local CLIP content-matching.
+- **Scale-to-fit vertical reframe** backend; vertical Shorts/Reels floor 12-15s.
+- **CRLF eliminated at the source**; montage-type-aware handoff validation.
+- **Free image-generation recovery** before any paid fallback.
 
 ### v0.1.1 — Multi-account video publishing (2026-06-12)
 
@@ -463,47 +477,50 @@ It can:
 
 The result is a ready post package, not the publication itself.
 
-### Video Agent
+### Scenario Agent
 
-Video Agent owns video content preparation before editing.
+Scenario Agent owns the text and voice side of video content: it understands the
+source and writes the narration. It produces no clips and does no vision work.
 
 It can:
 
-- prepare narration/script;
-- work with video package metadata;
-- prepare source maps and edit maps;
-- prepare Type 1 manual-edit and Type 1 automontage input;
-- prepare Type 2 Reference Remake logic: reference structure, translated/adapted
-  narration, replacement clip selection, and beat-level cutting;
-- prepare Type 3 Revoice input: transcribe and adapt a Russian voiceover for an
+- understand the source (title, description, transcript, web) before writing;
+- write the narration text and get approval (Gate 1);
+- generate the ElevenLabs voiceover and alignment, and get audio approval (Gate 2);
+- prepare video package metadata;
+- for Type 2 Reference Remake: transcribe the reference and adapt the Russian
+  narration;
+- for Type 3 Revoice: transcribe the source and adapt a Russian voiceover for an
   existing video while keeping its visual.
 
-Video Agent should not final-render a video when that is Video Edit Agent's
-responsibility.
+Scenario Agent does not select clips, cut, frame, or render — that is the Video
+Agent's responsibility.
 
-### Video Edit Agent
+### Video Agent
 
-Video Edit Agent owns final assembly and render.
+Video Agent owns editing and final render, and is the sole owner of vision work.
 
 It can:
 
-- assemble Shorts/Reels from prepared clips and edit maps;
-- handle TTS/audio;
+- run scene detection and build contact sheets;
+- select clips and build the clip map (said = shown), and cut the clips;
+- frame/reframe (including scale-to-fit vertical);
+- mix the approved narration audio with the cut video;
 - add music, branding, and final visual elements;
-- perform vertical reframe/crop;
 - check duration, framing, readability, and metadata cleanup;
-- prepare final video packages for QA/Publisher.
+- present the rendered candidate for final review (Gate 3) and prepare the final
+  video package for QA/Publisher.
 
-For Type 2, Video Edit Agent should assemble a near-remake from Video Agent's
-map rather than turning the task into free montage.
+For Type 2, Video Agent assembles a near-remake from the reference match map
+(local CLIP content-matching) rather than turning the task into free montage.
 
 Supported video montage types:
 
 - Type 1 Manual - the operator does the final montage from the prepared clip
   package; agents stop at package preparation.
-- Type 1 Automontage - a short video assembled by Video Edit Agent from the
-  prepared clips and edit map around approved narration, with vertical framing,
-  music, branding, and final render.
+- Type 1 Automontage - a short video assembled by Video Agent from the prepared
+  clips and edit map around approved narration, with vertical framing, music,
+  branding, and final render.
 - Type 2 Reference Remake - a new video built from the structure and pacing of a
   reference video, replacing its visual sequence with the operator's own sources
   (reference frames are never reused).
@@ -668,8 +685,9 @@ Typical production flow:
 2. Orchestrator defines the format, platforms, execution mode, and required
    agents.
 3. Search Agent finds sources or topics when needed.
-4. Post Agent or Video Agent prepares the content package.
-5. Video Edit Agent assembles the final video when the task is video-based.
+4. Post Agent prepares the post package; for video, Scenario Agent prepares the
+   narration text, voiceover, and metadata.
+5. Video Agent edits and assembles the final video when the task is video-based.
 6. QA Agent checks package, metadata, and contracts.
 7. Orchestrator creates a Publisher task only after QA passes or an explicit
    fast-mode QA skip is authorized.
