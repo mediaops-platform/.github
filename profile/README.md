@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.1.2](#releases) — Scenario/Video Agent split (2026-06-19)**
+**Latest release: [v0.2.0](#releases) — Analytics Agent + search rewrite (2026-06-26)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -226,6 +226,8 @@ flowchart LR
     Publisher --> Platforms["YouTube · Facebook · Instagram"]
     Orchestrator --> Comment["Comment Agent"]
     Comment --> Platforms
+    Platforms --> Analytics["Analytics Agent"]
+    Analytics -.-> Orchestrator
 ```
 
 Core principles:
@@ -254,6 +256,7 @@ Already available:
 - YouTube video flow;
 - Instagram local/VPS foundation;
 - Comment Agent base/profile engagement foundation;
+- config-gated Analytics Agent performance feedback;
 - QA gate;
 - release sanitization;
 - bootstrap foundation;
@@ -269,6 +272,28 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.2.0 — Analytics Agent + search rewrite (2026-06-26)
+
+- **Analytics Agent (new role)** — a config-gated, out-of-band agent that reads
+  published-content performance (views, retention, engagement) across
+  YouTube/Facebook/Instagram and surfaces evidence-backed, per-frame causal
+  feedback to producers (second -> beat -> frame -> why). Adds its own pipeline,
+  convention, runtime collectors, state tables, and an optional Google-Sheets
+  export (off by default). Advisory only — never a publication gate.
+- **Search rewrite** — enforced source-domain diversity, two-pass discovery, and
+  a per-account `search.enabled` toggle to skip a destination from auto-search.
+- **Instagram Reels archive-reuse backlog driver** — schedule the oldest
+  unpublished archived Reels across N days from one command (account-parametric,
+  Reels-only, gate markers never fabricated).
+- **Scenario/Orchestrator validation gates** — deterministic narration-text gate,
+  pre-factory spec-link validation (cross-slot + reference-not-in-source),
+  grammatical-form check before applying TTS stress, and mandatory
+  stranded-contract reconciliation.
+- **Factory fixes** — Type 2 sources downloaded as H.264 at 1080p or below;
+  `creative_only` allowed for profile-backed evergreen fact cards.
+- **Repository hygiene** — the repository holds only working, implemented agents;
+  design drafts, plans, and R&D move to local handoff, not the repo.
 
 ### v0.1.2 — Scenario/Video Agent split (2026-06-19)
 
@@ -598,6 +623,26 @@ It can:
 Comment Agent does not publish videos, schedule content, change metadata, pin
 comments, archive packages, touch VPS/R2 state, or edit repository files.
 
+### Analytics Agent
+
+Analytics Agent owns optional, config-gated performance feedback. It runs out of
+band like Comment Agent: no task contracts, never in the production task chain,
+and active only when `analytics.enabled` for the account.
+
+It can:
+
+- read published-content performance (views, retention, engagement) for matured
+  videos through the platform analytics APIs;
+- run a causal review (second -> beat -> frame -> why) with a counterexample
+  check, supporting evidence, and a confidence level;
+- write advisory findings to the local state database and an optional
+  Google-Sheets export (off by default);
+- surface a consumption playbook that producers read as findings, not as new
+  gates.
+
+Analytics Agent is advisory only: it never publishes, schedules, deletes, edits
+pipelines, changes metadata, or creates hard blockers.
+
 ## Features
 
 ### Posts
@@ -800,7 +845,6 @@ Before a new feature is enabled, Architect should assess:
 
 The platform evolves like a content operating system:
 
-- **Analytics Agent** — analyzes key retention moments and audience response; recommends improvements to how other agents work.
 - **Niche-specific Scenario Agent** — niche scripts and donor-video flow for long sources.
 - **Codex SDK / Claude Agent SDK integration** — agents coordinate automatically: the operator sets a task and gets the result.
 - **Telegram as a new publication destination** alongside YouTube, Facebook, Instagram.
