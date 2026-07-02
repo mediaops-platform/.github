@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.2.0](#releases) — Analytics Agent + search rewrite (2026-06-26)**
+**Latest release: [v0.3.0](#releases) — Video DJ Agent + publish-now (2026-07-02)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -228,6 +228,8 @@ flowchart LR
     Comment --> Platforms
     Platforms --> Analytics["Analytics Agent"]
     Analytics -.-> Orchestrator
+    Operator -.-> VideoDJ["Video DJ Agent"]
+    VideoDJ --> Platforms
 ```
 
 Core principles:
@@ -257,6 +259,7 @@ Already available:
 - Instagram local/VPS foundation;
 - Comment Agent base/profile engagement foundation;
 - config-gated Analytics Agent performance feedback;
+- config-gated Video DJ 24/7 streaming (encoder + watchdog + FB rolling lives);
 - QA gate;
 - release sanitization;
 - bootstrap foundation;
@@ -272,6 +275,35 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.3.0 — Video DJ Agent + publish-now (2026-07-02)
+
+- **Video DJ Agent (new role)** — a config-gated, out-of-band 24/7 streaming
+  operator: drives a deployed server-side streaming engine (encoder + watchdog +
+  Facebook rolling supervisor) over YouTube continuous and Facebook
+  rolling/one-shot lives. Adds its own pipeline, queue convention, three
+  approved runtime engines, systemd examples, and an operator doc.
+- **Publish-now (immediate publication)** — publish a ready package immediately
+  on YouTube, Facebook video, Instagram Reels, and Instagram feed
+  (`publication_mode = immediate`, slot `now`): no schedule, no durable plan,
+  no VPS worker; Instagram runs a synchronous one-pass path.
+- **Instagram failed-slot recovery** — immediate republish handoff for missed
+  slots plus an R2 staging cleanup tool (verified deletes + DB resolution
+  states) and a closeout rule that mirrors the resolution into both plan copies.
+- **Media-ops bot resolution states** — recovered slots stop pinning
+  `/instagram` and `/pending` as "Needs attention"; only genuinely unresolved
+  failures stay flagged.
+- **record-manual-youtube** — Publisher recovery mode symmetric with
+  record-manual-facebook: verifies an operator-uploaded YouTube video via API
+  read-back and records it into publishing state.
+- **Slot-cancellation propagation** — a shared cancellation convention;
+  factories drop operator-cancelled slots from every downstream contract and
+  annul all-cancelled contracts.
+- **Facebook comment grounding** — published FB videos/reels are recorded into
+  a state table so Comment Agent grounds replies on the real subject.
+- **Consistency + de-leak sweep** — execution-mode default clarified
+  (`balanced` with a config override), metadata-schema doc parity with the
+  actual producer shape, retired pre-split files removed.
 
 ### v0.2.0 — Analytics Agent + search rewrite (2026-06-26)
 
@@ -643,6 +675,27 @@ It can:
 Analytics Agent is advisory only: it never publishes, schedules, deletes, edits
 pipelines, changes metadata, or creates hard blockers.
 
+### Video DJ Agent
+
+Video DJ Agent owns optional, config-gated 24/7 streaming. It runs out of band
+like Comment Agent: no task contracts, never in the production task chain, and
+active only when `streaming.enabled` for the account.
+
+It can:
+
+- drive a deployed server-side streaming engine (encoder + watchdog + Facebook
+  rolling supervisor) via service commands — YouTube continuous and Facebook
+  rolling/one-shot lives;
+- manage playlists and stream queues through a shared queue convention,
+  including operator-remembered playlists;
+- collect stream titles/descriptions from the operator when going live;
+- report stream health and rollovers.
+
+Video DJ Agent never provisions infrastructure and never re-implements the
+streaming engine: the VPS lifecycle belongs to Architect, and the engine is
+approved runtime deployed to the server. Music/content rights are entirely the
+operator's responsibility.
+
 ## Features
 
 ### Posts
@@ -674,7 +727,9 @@ pipelines, changes metadata, or creates hard blockers.
 - clip plans;
 - reframe/crop;
 - metadata cleanup before publishing;
-- YouTube/Facebook/Instagram routing.
+- YouTube/Facebook/Instagram routing;
+- immediate publication (publish-now) on every platform in scope — no
+  schedule, no durable plan, no VPS worker.
 
 MediaOps helps organize and assemble videos, but it does not guarantee the same
 quality for every niche. Final quality depends on source materials, topic
@@ -688,7 +743,10 @@ how well the operator adapts the rules to the niche.
 - deferred VPS worker publication;
 - sync-back after slots;
 - wake-up driver through the approved helper;
-- protection against treating a pending JSON file as a real monitor.
+- protection against treating a pending JSON file as a real monitor;
+- failed-slot recovery: immediate republish handoff plus verified R2 staging
+  cleanup with DB resolution states, so recovered slots stop flagging as
+  failures on status surfaces.
 
 ### VPS And Telegram Operations
 
@@ -696,6 +754,8 @@ how well the operator adapts the rules to the niche.
 - server-side status/reporting service;
 - Telegram bot/status interface for viewing plan and task state;
 - sync-back from VPS state into local runtime;
+- optional 24/7 streaming services (encoder + watchdog + FB rolling
+  supervisor) driven by the Video DJ agent;
 - foundation for future server-side workflows.
 
 ### Comment Engagement
