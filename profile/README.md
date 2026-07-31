@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.3.0](#releases) — Video DJ Agent + publish-now (2026-07-02)**
+**Latest release: [v0.4.0](#releases) — Designer + Copywriter roles, long-form Type 1, closeout runner (2026-07-31)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -218,6 +218,8 @@ flowchart LR
     Operator["Operator"] --> Orchestrator["Orchestrator"]
     Operator -.-> Architect["Architect"]
     Orchestrator --> Search["Search Agent"]
+    Orchestrator --> Copywriter["Copywriter Agent"]
+    Copywriter -.-> Orchestrator
     Orchestrator --> Post["Post Agent"]
     Orchestrator --> Scenario["Scenario Agent"]
     Scenario --> Video["Video Agent"]
@@ -228,6 +230,8 @@ flowchart LR
     Comment --> Platforms
     Platforms --> Analytics["Analytics Agent"]
     Analytics -.-> Orchestrator
+    Operator -.-> Designer["Designer Agent"]
+    Designer -.-> Operator
     Operator -.-> VideoDJ["Video DJ Agent"]
     VideoDJ --> Platforms
 ```
@@ -275,6 +279,51 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.4.0 — Designer + Copywriter roles, long-form Type 1, closeout runner (2026-07-31)
+
+- **Designer Agent (new role)** — video cover art as a dedicated role, on
+  operator-requested contracts only: YouTube preview `16:9` and Shorts
+  thumbnail `9:16`, with a binding HUD-plate text template, live-validated
+  safe zones, its own contract factory, and a per-format config block. One
+  variant per video, operator approval before the task closes.
+- **Copywriter Agent + Type 4 Source-Cut (new role + video family)** — donor
+  videos are mined into a state-DB topic registry (cut range, duration,
+  narration-ready context brief); factory-built serve contracts feed those
+  topics into a new Type 4 video family that cuts a segment from the source
+  instead of assembling clips. Reused footage routes to Facebook and
+  Instagram, never YouTube.
+- **Long-form Type 1 (41s+)** — a distinct scenario method for longer
+  verticals: multi-beat skeleton, montage deltas, a pre-TTS morphology and
+  stress checklist, and TTS alignment that survives finalize and patch.
+- **Search rework** — per-category candidate pools instead of one flat stack:
+  a single freshness window per account, playlist-scoped search areas defined
+  in operator config (never derived from a playlist description), pool modes
+  with an off-list fallback, entry points for sections search engines do not
+  index, and serve-time reachability checks. Serving draws only from
+  pool-backed categories, so an interactive session never pays for broad
+  discovery.
+- **Deterministic archive closeout** — one runner replaces hand-written
+  closeout: year/month/day archive layout, a publication-evidence gate that
+  resolves platform IDs across every publisher report shape, in-process
+  YouTube context backfill, byte-verified source-to-dest moves, and empty
+  shell cleanup. Plus a workspace janitor and a contact-sheet runner.
+- **Subject-lock reframe** — a `16:9` to `9:16` reframer that holds one scale
+  per clip with a locked subject X, replacing the unstable external tool on
+  the default vertical path.
+- **Image generation governance** — provider routing is fixed per artifact
+  class and dispatched by environment; configuration values are read at the
+  moment of the call rather than cached for a session; every generation
+  writes the parameters actually sent next to the config they resolved from,
+  so metered spend is visible in the artifacts instead of the monthly bill.
+- **Safety and contract hardening** — a factory now refuses to invent a
+  timezone (a missing one is a blocker, not a silent UTC drift); branding can
+  no longer shorten the narration tail; release-slot keys carry the conflict
+  family rather than the finer platform token; post packages enumerate in one
+  binding shape; cancelled slots delete their local files immediately.
+- **Pre-release rule review** — an independent read-only pass over the whole
+  rule set closed 74 findings (6 of them behaviour-changing conflicts) and
+  synchronised operator documentation with the shipped feature set.
 
 ### v0.3.0 — Video DJ Agent + publish-now (2026-07-02)
 
