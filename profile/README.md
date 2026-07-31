@@ -563,6 +563,17 @@ Search Agent does not publish and does not modify runtime settings. Custom
 profiles are runtime extensions created by Architect on operator request, not
 default repository roles.
 
+### Copywriter Agent
+
+Copywriter Agent turns operator-supplied donor videos into a reusable topic
+registry in the state database: category, cut range, approximate duration,
+whether the source has usable voice, and a narration-ready context brief.
+
+It works in two modes: an out-of-band registry fill on an operator-provided
+URL, and a serve step that hands a set of approved topics to the production
+chain on an Orchestrator contract. The agent never publishes and never edits
+video.
+
 ### Post Agent
 
 Post Agent owns Facebook photo and text post packages. It ships with a default
@@ -633,6 +644,22 @@ Supported video montage types:
 - Type 3 Revoice - an existing video re-voiced with new Russian narration
   (original audio replaced, visual kept); routed to Facebook video and Instagram
   Reels only, not YouTube.
+- Type 4 Source-Cut - a segment cut from a donor video against a topic served
+  from the Copywriter registry, with its own narration, framing, music, and
+  branding; reused footage routes to Facebook video and Instagram Reels only,
+  not YouTube.
+
+### Designer Agent
+
+Designer Agent owns video cover art end to end: YouTube preview `16:9` and
+Shorts thumbnail `9:16`.
+
+It runs only on an operator-requested contract - never automatically and never
+for every video - produces one variant per video, and stops at an approval gate
+before the task closes. Covers follow a binding plate template and live-validated
+safe zones. The role does not montage, publish, or touch post packages; the
+vertical Shorts slot is uploaded by the operator through Studio because the API
+cannot fill it.
 
 ### QA Agent
 
@@ -954,10 +981,8 @@ Before a new feature is enabled, Architect should assess:
 
 The platform evolves like a content operating system:
 
-- **Niche-specific Scenario Agent** — niche scripts and donor-video flow for long sources.
 - **Codex SDK / Claude Agent SDK integration** — agents coordinate automatically: the operator sets a task and gets the result.
 - **Telegram as a new publication destination** alongside YouTube, Facebook, Instagram.
-- **Own VPS streaming service** — an agent runs YouTube and Facebook live broadcasts from pre-prepared playlists, without a local machine.
 - **Cloud Central State** — shared state in an external database (Cloudflare D1 or VPS) to work from several computers at once.
 
 ## Security
