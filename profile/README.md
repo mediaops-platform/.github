@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.4.0](#releases) — Designer + Copywriter roles, long-form Type 1, closeout runner (2026-07-31)**
+**Latest release: [v0.4.2](#releases) — the environment doctor runs again, montage fixes, engaged-views collection (2026-08-12)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -279,6 +279,99 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.4.2 — The environment doctor runs again, montage fixes, engaged views (2026-08-12)
+
+Patch release. No new roles; thirteen active agents, unchanged.
+
+- **The environment doctor was dead and nobody knew.** It had not produced a
+  line of output since 2026-07-28, on ANY role: three checks in the config
+  hygiene scan returned results without the mandatory `state` field, and the
+  summary step read that field unconditionally, so the run ended in a bare
+  `KeyError` before printing anything. Four unit tests stayed green throughout
+  — they asserted the checker's own local shape and never passed its output
+  through the consumer that rejected it. Nobody noticed because a readiness
+  doctor is a first-install and a something-is-broken tool: on a machine that
+  already works there is no reason to run it, and the one path where it always
+  executes is the one nobody walks until a new operator does. Fixed at the
+  contract, and a violation now names the offending check instead of raising an
+  unexplained crash.
+- **Six montage defects that were being worked around by hand.** The
+  pre-branding QA report was written under one slug and looked for under
+  another, failing on correctly rendered packages for a week; a source-cut
+  contract could ship with an empty source path because the factory knew three
+  field names and the result carried a fourth; `--render-paths` pointed at the
+  wrong file resolved the output directory to the current working directory,
+  which always exists, so the guard waved it through; and the recorded
+  canonical checksum went stale whenever the metadata sanitize pass rewrote the
+  file after it was computed. A new `rehash-canonical` step refreshes that
+  checksum, keeps the previous value beside it, and does nothing when the file
+  has not changed.
+- **`engagedViews` is collected.** The metric was available on the existing
+  token and scope all along and had simply never been requested, so it reached
+  neither the snapshot store nor the analytics review. It is now asked for
+  alongside the core metrics — and, because an unknown metric name fails the
+  entire query rather than being dropped from the response, a rejection falls
+  back to the original three and fetches the new one separately. Views,
+  average duration and average percentage cannot be lost to it.
+- **First-run setup asks before it installs.** The bootstrap sequence used to
+  run a thirteen-role readiness check and install the video toolchain before
+  finding out what the operator produces, so an operator publishing only text
+  and photo posts waited through a CPU machine-learning install they would
+  never use. Setup now settles publish mode, accounts and content families
+  first, then checks the roles that profile needs, then installs only what it
+  needs. Git is documented as a precondition at every entry point — one of the
+  supported environments will not start a session outside a Git repository.
+  Python is no longer a manual prerequisite: it is installed per-user when
+  absent, and an interpreter that is already present is never upgraded,
+  replaced, or have its libraries changed without asking.
+- **The server question is asked only when something needs a server.** It used
+  to be asked at the end of every install regardless. The triggers are now
+  derived from what the operator already declared, the question is phrased as
+  the problem it solves rather than as infrastructure jargon, and when nothing
+  applies the setup says so in one line instead of asking.
+- **Operator instructions carried in a contract are not optional.** The field
+  that holds them was documented in one place as "recommended", with the only
+  statement about it being a restriction — so an agent could drop a montage or
+  card requirement and remain compliant. Reading it, applying it, and quoting
+  it back in the completion report are now stated where every role reads them.
+
+### v0.4.1 — Profile post formats, search retrieval rules, corruption fixes (2026-08-09)
+
+Patch release. No new roles - thirteen active agents, as in v0.4.0.
+
+- **Profile-backed post formats are production-ready.** Message ceilings now
+  resolve per format instead of assuming a news post, with the platform cap
+  winning whenever it is lower than the format's own; the contract factory
+  accepts profile format labels; and `image_strategy` is read from the profile
+  rather than inferred from whether article images happen to be present. A
+  multi-card carousel is supported as what it is - a photo post with several
+  images, up to the platform maximum of ten.
+- **Search retrieval is specified.** The pipeline described result filtering in
+  detail and left retrieval itself undefined. It now states that a topic is not
+  a query: the subject is expanded into the vocabulary its own trade press uses
+  before anything is searched, freshness comes from the engine's date filter
+  rather than date words in the query text, and negative keyword operators are
+  out because precision belongs on the result set. A shortfall ladder makes
+  "no news exists" a conclusion available only after that expansion is worked
+  and a domain-breadth floor is met, and the report states which queries were
+  tried and which domains were checked.
+- **`excluded_domains`** - a new per-account hard reject, applied before ranking
+  in every source-pool mode including the shortfall path. Some genres clear
+  every content filter and are still wrong for an account; the domain is the
+  only handle on them.
+- **Six silent-corruption fixes** across montage, branding scope, analytics
+  cohort selection, and archive closeout - one class of defect, each producing
+  a wrong result while reporting success.
+- **Image fidelity end to end** - covers keep full 4:4:4 chroma with a light
+  unsharp pass on downscale at quality 95, and a feed derivative no longer
+  re-encodes a file that is already feed-safe. Archive closeout retains the
+  image generation log, so provider, model, and call count stay with the
+  package.
+- **Handoff prompts** reduced to a three-line shape, and the contract boundary
+  restated: the line is the package's life, not the task status, so finishing
+  your own unpublished work is completing the job rather than reopening a
+  contract.
 
 ### v0.4.0 — Designer + Copywriter roles, long-form Type 1, closeout runner (2026-07-31)
 
