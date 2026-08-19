@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.4.2](#releases) — the environment doctor runs again, montage fixes, engaged-views collection (2026-08-12)**
+**Latest release: [v0.5.0](#releases) — a serverless Instagram backend, image generation as configuration, and an archive that deletes only what it filed (2026-08-20)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -42,7 +42,7 @@ regularly across multiple social platforms and want to:
 - keep routine audience replies accountable and logged;
 - operate multiple platform accounts in the same system with per-account
   topic policy and per-destination routing;
-- run locally or with an optional VPS worker;
+- run locally, on a Cloudflare Worker, or with an optional VPS worker;
 - switch between agent environments (Codex / Claude Code) without losing
   project state;
 - keep secrets, runtime configuration, and production artifacts outside the
@@ -167,6 +167,11 @@ For publishing:
 
 ### Required VPS Software
 
+A VPS is OPTIONAL for Instagram since v0.5.0 — the Cloudflare Worker backend
+publishes without a server of your own, and needs only a Cloudflare account,
+Node.js and `wrangler` on the machine that deploys it. A VPS is still required
+for 24/7 streaming (Video DJ) and remains supported for Instagram.
+
 For VPS worker mode:
 
 - Linux VPS with systemd;
@@ -279,6 +284,68 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.5.0 — Serverless Instagram, image generation as configuration, an archive that deletes only what it filed (2026-08-20)
+
+Minor release. No new roles; thirteen active agents, unchanged.
+
+- **Instagram can publish without a server of your own.** A third backend joins
+  local and VPS: a Cloudflare Worker with its own database and a cron that fires
+  every minute. Nothing to rent, nothing to patch, and a failed slot announces
+  itself over Telegram within a minute instead of waiting for the next scheduled
+  wake — which is what the VPS path had to do, because a plan sitting on a
+  server is only reachable when something goes and fetches it. Worker state
+  answers over HTTP in a second, so it is fetched when someone needs it: right
+  before archiving, and never on a schedule. The database is treated as an
+  in-flight buffer rather than a store — once a day is archived its rows are
+  redundant and get purged, because the archived package and the local state
+  database already carry the same facts and more.
+- **Which image provider runs is configuration, not code.** Provider, model and
+  cost tier resolve from one config block at the moment of the call, with a
+  fallback that can actually run when the first choice fails. Requested sizes
+  are derived from the provider's own published constraint instead of a list
+  transcribed by hand — a list that had been wrong, describing three fixed sizes
+  for a model that accepts any size meeting a rule. Environments differ on
+  purpose: an agent environment with free native generation is forbidden from
+  making a paid call and stops to ask instead, because a paid call there buys
+  nothing.
+- **Archive closeout deletes only what it archived.** The copy step and the
+  byte-verify both honoured the retention list; the delete step did not, ending
+  in a blanket removal of the whole source folder. On a filtered run — closing
+  one account's work on a day that held two — that removed three approved
+  packages belonging to the other account and reported `residual_risk: none`.
+  Deletion is now scoped to what was copied and hash-verified, and a date whose
+  task queue still holds an unfinished contract is refused outright: closeout
+  removes working folders, and an open contract's files are exactly what it
+  would be removing.
+- **Publication evidence has to be about the file being published.** The
+  pre-branding quality gate fingerprinted the path recorded inside its own
+  report and compared it to the fingerprint recorded beside it — a
+  self-consistency check that never asked whether the report described the video
+  about to be branded. A re-rendered candidate therefore sailed through on
+  evidence about its predecessor. The gate now takes the actual input, and a new
+  step re-points evidence at a changed file without re-encoding it, so a
+  post-render edit no longer means rebuilding an approved montage to refresh a
+  checksum.
+- **Search stopped narrowing before it looked.** Queries had been carrying the
+  month name, binding themselves to a domain list, and using narrow English
+  trade terms — three filters applied to the question instead of to the answers,
+  which cost about 110 searches for three slots while the story that fit came
+  back from one broad query. Retrieval now asks broadly, in the audience's
+  language first, and filters the results. The multi-day domain cooldown is gone
+  entirely: on a closed set of primary sources the arithmetic is fatal — domains
+  divided by cooldown days is a hard ceiling — and it had been pushing an
+  account whose sources are the observatories themselves onto second-hand
+  rewrites of their own announcements.
+- **Smaller things that were quietly wrong.** Panning across a frame eased each
+  interval between measurements separately, and that easing has zero velocity at
+  both ends, so the pan stalled at every measurement and surged out of it: a
+  twenty-fold speed swing three times inside two and a half seconds. It
+  interpolates continuously now. Hook cards gained the four plate positions
+  their own documentation had been advertising without an implementation, plus a
+  measurement of how much of the subject a plate would cover. A publish guard
+  refuses to upload when it cannot prove the previous attempt did not already
+  succeed.
 
 ### v0.4.2 — The environment doctor runs again, montage fixes, engaged views (2026-08-12)
 
