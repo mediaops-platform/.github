@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.5.0](#releases) — a serverless Instagram backend, image generation as configuration, and an archive that deletes only what it filed (2026-08-20)**
+**Latest release: [v0.6.0](#releases) — the portable core: the same system now runs on Windows, macOS, and Linux (2026-08-29)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -86,12 +86,20 @@ repository.
 
 ### Supported Operating Systems
 
-Primary local production target:
+Local production targets — the same system, three workstations:
 
-- Windows 10/11;
-- PowerShell 7 for UTF-8 and Cyrillic-safe command output;
-- Windows Task Scheduler for local delayed Instagram publishing;
-- Windows OpenSSH client when VPS mode is used.
+- **Windows 10/11** — the reference platform:
+  - PowerShell 7 for UTF-8 and Cyrillic-safe command output;
+  - Windows Task Scheduler for local delayed Instagram publishing;
+  - Windows OpenSSH client when VPS mode is used.
+- **macOS on Apple Silicon** (verified on an M2): Homebrew toolchain, MPS for
+  torch-backed steps, POSIX roots.
+- **Linux / Ubuntu 24.04** (verified): apt toolchain, CPU or CUDA torch per
+  host, POSIX roots.
+
+On macOS and Linux the scheduler-bound part of the local Instagram flow does
+not register — those automations are Windows-only for now; everything else in
+the production chain is the same code on all three.
 
 VPS mode:
 
@@ -101,13 +109,15 @@ VPS mode:
 - sudo/root access only for explicitly approved package, service, or system
   dependency changes.
 
-Not primary production targets:
+Not production targets:
 
-- macOS/Linux desktop may be used for repository review or partial development,
-  but the current local production flow is Windows-oriented;
 - WSL is not a replacement for Windows Task Scheduler in the local Instagram
   flow;
 - mobile operating systems are not supported.
+
+Distributions and versions outside the verified pair (Ubuntu 24.04, macOS on
+Apple Silicon) are expected to work through the same portable core, but are
+not part of the verified matrix.
 
 ### Hardware
 
@@ -284,6 +294,53 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.6.0 — The portable core: Windows, macOS, and Linux run the same system (2026-08-29)
+
+Minor release. No new roles; thirteen active agents, unchanged.
+
+- **The operator workstation is no longer a single platform.** Until now the
+  production flow assumed Windows: drive letters in the defaults, Windows font
+  directories, PowerShell for anything that touched a path. Two verification
+  cycles later — one on Apple Silicon, one on Ubuntu 24.04 — the same code runs
+  on all three. One shared path resolver replaced the private copies that each
+  script had grown, so a config written with forward slashes and a config
+  carrying legacy Windows templates both resolve to the same place, on any
+  host. Fonts resolve per platform and fail loudly instead of silently
+  substituting a face nobody chose. The environment doctor tells the truth on
+  POSIX rather than reporting a missing PowerShell as a defect. Generated
+  configs and toolchains are written in the host's own shapes, so a fresh
+  install on a Mac or a Linux box does not inherit `.exe` paths it can never
+  use. Where a filesystem is case-sensitive, the system now treats two files
+  differing only in case as two files.
+
+- **Montage execution became a switch, and the default now spares the
+  subscription.** A multi-slot video contract used to fan out one sub-agent per
+  video, always. That is faster in wall-clock and considerably more expensive
+  in tokens: every head re-reads the rules, the contract, and the material in
+  its own context, and on a subscription that drains the five-hour and weekly
+  limits far sooner than the work itself requires. The mode is now
+  configuration: `parallel` keeps the fan-out for top-tier plans, while
+  `sequential` — the new default — has one agent carry every slot in order,
+  presenting them for approval together and running renders in the background
+  while it prepares the next one. Same output, a fraction of the limit.
+
+- **Report shapes stopped drifting.** Three canonical result shapes — search
+  serve, post batch, publisher result — now travel inside the contract itself
+  as a required version, are checked before assembly rather than probed field
+  by field, and are read by every consumer in all their historical forms. A
+  renamed field now reads as a mismatch with a name, not as missing data.
+
+- **A cover plate no longer buys a paid image generation.** When no placement
+  is clean, the card ships at its default anchor with a note for the operator,
+  instead of regenerating backgrounds until the composition cooperates. Paid
+  generations are for a frame that came back as the wrong thing — not for
+  moving a caption.
+
+- Also: beat timing survives stress marks and sentence junctions in the
+  narration, and the pause between phrases stopped stealing four to eight
+  percent of every rendered video; the rules file that every agent reads on
+  startup dropped from 55 KiB to under 30 KiB, with a test holding the line.
 
 ### v0.5.0 — Serverless Instagram, image generation as configuration, an archive that deletes only what it filed (2026-08-20)
 
