@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.6.0](#releases) — the portable core: the same system now runs on Windows, macOS, and Linux (2026-08-29)**
+**Latest release: [v0.6.1](#releases) — the session knows itself, the duplicate gate is a command, and the rulebook drops its history (2026-09-05)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -282,7 +282,13 @@ Already available:
 - QA gate;
 - release sanitization;
 - bootstrap foundation;
-- approved runtime scripts.
+- approved runtime scripts;
+- duplicate-history gate as a runtime command over the state database and
+  every package, read back by the package finalizer;
+- session identity and handoff between agent sessions, with the executor
+  (environment, model, effort) recorded in every completion report;
+- scheduled Instagram token refresh on Windows, macOS and Linux with a health
+  file and Telegram alerts.
 
 Practically, this means:
 
@@ -294,6 +300,55 @@ Practically, this means:
   not configured.
 
 ## Releases
+
+### v0.6.1 — The session knows itself, the duplicate gate is a command, and the rulebook drops its history (2026-09-05)
+
+Minor release. No new roles; thirteen active agents, unchanged.
+
+- **An agent session knows itself and hands over cleanly.** Every long-lived
+  chat now carries an identity — role, line, platform, environment — reads its
+  own context-window occupancy from the session file instead of guessing, and
+  offers a compaction or a handoff at fixed thresholds. Codex and Claude
+  sessions never share a handoff: they are different models with different
+  behaviour. And every completion report records what the contract actually
+  ran on — environment, model and effort — written by the runtime from the
+  session file, so defects can be sorted by role, environment and model
+  instead of by impression.
+
+- **The duplicate gate became a command.** Duplicate history used to be a
+  comparison described in prose and left to the agent, and stories could
+  reach approval again while their rows sat in the database. The check is now
+  one runtime command over the state database and every package in work,
+  ready-to-publish and archive — by candidate, by reference image, or, for
+  formats that carry no source article, by the format's own history — and the
+  package finalizer reads the verdict back: a blocked or duplicate verdict
+  cannot close as completed.
+
+- **Posts leave a trace.** Facebook photo and text posts now write a state
+  row at publish time, back-filled for history, so the Comment Agent grounds
+  its replies on posts the way it already did on videos, and a deletion flips
+  the record instead of finding nothing to update.
+
+- **Instagram tokens keep themselves alive.** Instagram-Login tokens expire
+  to the minute after sixty days. A weekly job now refreshes them on Windows,
+  macOS or Linux — Task Scheduler, launchd, cron or a systemd timer — records
+  their health, alerts over Telegram, and the day's closeout reads the
+  verdict.
+
+- **The rulebook keeps its rules and drops its history.** Pipelines,
+  conventions, runtime comments and test docstrings had grown a dated record
+  of every incident that shaped them. The rules stayed; the incident
+  narrative, contract ids and dates are gone, and the operator documentation
+  is date-free and explanation-free. The model table now follows the official
+  Claude Code and Codex documentation.
+
+- Also: the task bus retires a superseded contract the moment it is re-issued
+  and reports any other live contract naming the same package; every
+  factory-built contract names where its completion report lands and what the
+  envelope must carry; clips are cut at 30 fps with no invented frames; a
+  truncated vision answer is re-asked in smaller batches instead of being read
+  as a rejection; one gate is one pause — no paid generation before the
+  operator's word, and texts and audio never in one message.
 
 ### v0.6.0 — The portable core: Windows, macOS, and Linux run the same system (2026-08-29)
 
