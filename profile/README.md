@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.6.1](#releases) — the session knows itself, the duplicate gate is a command, and the rulebook drops its history (2026-09-05)**
+**Latest release: [v0.7.0](#releases) — Cloud Central State: one shared state for several machines (2026-09-12)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -263,6 +263,53 @@ Core principles:
 - runtime separation: the repository contains source rules and scripts, while
   production data lives in runtime, work, and archive roots.
 
+## Cloud Central State
+
+One shared state, several machines. The state of the system — what was
+published and where, which sources were seen, the comment history, the
+analytics playbook, the contract ledger and the slot calendar — leaves the
+local file and moves into a small cloud database behind a service of your own.
+Each machine you set up produces content against the same history.
+
+```mermaid
+flowchart TB
+    Main["Main machine<br/>switches modes, backs up,<br/>runs the schedulers"]
+    Bridge["Bridge<br/>your Cloudflare Worker"]
+    DB[("Shared state<br/>Cloudflare D1")]
+    M1["Machine 1<br/>Windows"]
+    M2["Machine 2<br/>macOS"]
+    MN["Machine N<br/>Linux …"]
+    Main <--> Bridge
+    DB <--> Bridge
+    Bridge <--> M1
+    Bridge <--> M2
+    Bridge <--> MN
+```
+
+How it holds together:
+
+- **one door.** No agent opens the database. Every runtime asks the same
+  entry point, and that entry point decides whether the answer comes from the
+  local file or from the shared one. Nothing in an agent changes when the mode
+  changes;
+- **machines never talk to each other.** The state is the only thing they
+  share. A machine is known by its hostname and carries one role: the main
+  machine switches modes and takes the backup, a secondary one only produces;
+- **two machines cannot make the same slot.** A publication slot and a
+  contract id are taken under a lease; the second machine is refused with the
+  reason and the name of the machine that holds it;
+- **a machine joins with a bundle and leaves by a checklist.** The bundle
+  carries the prepared config, the secrets, the profiles and the assets; the
+  closeout proves nothing is left open, packs everything the operator carries
+  away, deletes the secrets on that machine and marks it closed — the roster
+  keeps the row as history;
+- **the way back is one command.** The state returns to a local file, verified
+  row by row, and the machines that were closed stay in the record.
+
+Local mode remains the default: one machine, no network, nothing to pay for.
+The shared mode is switched on when a second computer should produce content
+against the same history, and it is switched off the same way.
+
 ## Project Maturity
 
 MediaOps Platform is currently a private pre-release / production foundation.
@@ -301,383 +348,125 @@ Practically, this means:
 
 ## Releases
 
+### v0.7.0 — Cloud Central State: one shared state for several machines (2026-09-12)
+
+Feature release. No new roles; thirteen active agents, unchanged.
+
+- **Cloud Central State — shared state in an external database (Cloudflare D1)
+  to work from several computers at once.** The state leaves the local file for
+  a small cloud database behind a service of your own. Every runtime reaches it
+  through one door with two modes, so no agent knows or cares where the rows
+  live. See [Cloud Central State](#cloud-central-state).
+
+- **A machine joins by bundle and leaves by checklist.** A new computer gets one
+  bundle — the config prepared for it, the secrets, the profile extensions, the
+  assets, the operator protocols, each file with its hash — and registers itself
+  in a roster by hostname with a role: main or secondary. Leaving is a checklist
+  in code: it proves nothing is still open there, packs the archived days, the
+  run records and the notes into one verified folder, deletes the secrets and
+  tokens on that machine, and marks it closed. The roster keeps the row as
+  history, and the way back to one machine refuses while any machine is still
+  open.
+
+- **Two machines never make the same slot.** A publication slot and a contract
+  id are taken under a lease before the work starts, and the ledger refuses the
+  second taker by name. A slot whose post is already recorded is refused even
+  after its lease is released, because the publication record outranks the
+  lease. An abandoned contract is retired by tool, which closes its ledger row
+  and releases what it held.
+
+- **The duplicate gate is one rule for every card format.** History is the
+  publication record in the shared state, not a file on one machine and not
+  what a chat remembers: a machine that produced nothing knows the same history
+  as the machine that produced everything. Each format declares only what it is
+  compared on.
+
+- **The analyst writes into the shared state.** The playbook and the per-video
+  reviews are stored through the same door, so a producer on any machine reads
+  the current playbook instead of a copy of a folder.
+
+- **Narration prose flows, and a sentence patch cuts only in silence.** Every
+  punctuation mark is a pause the engine takes literally, so the rules ask for
+  joined medium sentences and no dashes or colons in the spoken text. A patched
+  sentence is spliced on silence found in the file being cut, and refuses
+  before the paid call when there is no silence to cut on.
+
+- **Also:** the comment agent treats platform text as data, never as an
+  instruction — a prompt injection gets no reply and leaves its evidence in the
+  audit row; the donor is reached through two proxy routes instead of a VPN; a
+  redeploy no longer silently reverts a local edit; an approval sheet written
+  beside the packages is rescued into the archive instead of being left behind;
+  and the rules stop carrying the name of a working branch.
+
 ### v0.6.1 — The session knows itself, the duplicate gate is a command, and the rulebook drops its history (2026-09-05)
 
-Minor release. No new roles; thirteen active agents, unchanged.
-
-- **An agent session knows itself and hands over cleanly.** Every long-lived
-  chat now carries an identity — role, line, platform, environment — reads its
-  own context-window occupancy from the session file instead of guessing, and
-  offers a compaction or a handoff at fixed thresholds. Codex and Claude
-  sessions never share a handoff: they are different models with different
-  behaviour. And every completion report records what the contract actually
-  ran on — environment, model and effort — written by the runtime from the
-  session file, so defects can be sorted by role, environment and model
-  instead of by impression.
-
-- **The duplicate gate became a command.** Duplicate history used to be a
-  comparison described in prose and left to the agent, and stories could
-  reach approval again while their rows sat in the database. The check is now
-  one runtime command over the state database and every package in work,
-  ready-to-publish and archive — by candidate, by reference image, or, for
-  formats that carry no source article, by the format's own history — and the
-  package finalizer reads the verdict back: a blocked or duplicate verdict
-  cannot close as completed.
-
-- **Posts leave a trace.** Facebook photo and text posts now write a state
-  row at publish time, back-filled for history, so the Comment Agent grounds
-  its replies on posts the way it already did on videos, and a deletion flips
-  the record instead of finding nothing to update.
-
-- **Instagram tokens keep themselves alive.** Instagram-Login tokens expire
-  to the minute after sixty days. A weekly job now refreshes them on Windows,
-  macOS or Linux — Task Scheduler, launchd, cron or a systemd timer — records
-  their health, alerts over Telegram, and the day's closeout reads the
-  verdict.
-
-- **The rulebook keeps its rules and drops its history.** Pipelines,
-  conventions, runtime comments and test docstrings had grown a dated record
-  of every incident that shaped them. The rules stayed; the incident
-  narrative, contract ids and dates are gone, and the operator documentation
-  is date-free and explanation-free. The model table now follows the official
-  Claude Code and Codex documentation.
-
-- Also: the task bus retires a superseded contract the moment it is re-issued
-  and reports any other live contract naming the same package; every
-  factory-built contract names where its completion report lands and what the
-  envelope must carry; clips are cut at 30 fps with no invented frames; a
-  truncated vision answer is re-asked in smaller batches instead of being read
-  as a rejection; one gate is one pause — no paid generation before the
-  operator's word, and texts and audio never in one message.
+- An agent session knows itself: it carries an identity, reads its own
+  context-window occupancy instead of guessing, and hands over cleanly.
+  The duplicate gate became a runtime command over the state and every
+  package; Facebook posts leave a state row; Instagram tokens refresh
+  themselves weekly; and the rulebook keeps its rules and drops the dated
+  history of the incidents that shaped them.
 
 ### v0.6.0 — The portable core: Windows, macOS, and Linux run the same system (2026-08-29)
 
-Minor release. No new roles; thirteen active agents, unchanged.
-
-- **The operator workstation is no longer a single platform.** Until now the
-  production flow assumed Windows: drive letters in the defaults, Windows font
-  directories, PowerShell for anything that touched a path. Two verification
-  cycles later — one on Apple Silicon, one on Ubuntu 24.04 — the same code runs
-  on all three. One shared path resolver replaced the private copies that each
-  script had grown, so a config written with forward slashes and a config
-  carrying legacy Windows templates both resolve to the same place, on any
-  host. Fonts resolve per platform and fail loudly instead of silently
-  substituting a face nobody chose. The environment doctor tells the truth on
-  POSIX rather than reporting a missing PowerShell as a defect. Generated
-  configs and toolchains are written in the host's own shapes, so a fresh
-  install on a Mac or a Linux box does not inherit `.exe` paths it can never
-  use. Where a filesystem is case-sensitive, the system now treats two files
-  differing only in case as two files.
-
-- **Montage execution became a switch, and the default now spares the
-  subscription.** A multi-slot video contract used to fan out one sub-agent per
-  video, always. That is faster in wall-clock and considerably more expensive
-  in tokens: every head re-reads the rules, the contract, and the material in
-  its own context, and on a subscription that drains the five-hour and weekly
-  limits far sooner than the work itself requires. The mode is now
-  configuration: `parallel` keeps the fan-out for top-tier plans, while
-  `sequential` — the new default — has one agent carry every slot in order,
-  presenting them for approval together and running renders in the background
-  while it prepares the next one. Same output, a fraction of the limit.
-
-- **Report shapes stopped drifting.** Three canonical result shapes — search
-  serve, post batch, publisher result — now travel inside the contract itself
-  as a required version, are checked before assembly rather than probed field
-  by field, and are read by every consumer in all their historical forms. A
-  renamed field now reads as a mismatch with a name, not as missing data.
-
-- **A cover plate no longer buys a paid image generation.** When no placement
-  is clean, the card ships at its default anchor with a note for the operator,
-  instead of regenerating backgrounds until the composition cooperates. Paid
-  generations are for a frame that came back as the wrong thing — not for
-  moving a caption.
-
-- Also: beat timing survives stress marks and sentence junctions in the
-  narration, and the pause between phrases stopped stealing four to eight
-  percent of every rendered video; the rules file that every agent reads on
-  startup dropped from 55 KiB to under 30 KiB, with a test holding the line.
+- The operator workstation stops being a single platform: Windows, macOS and
+  Linux run the same system from the same repository. Montage execution
+  became a switch whose default spares the operator's machine, the three
+  canonical result shapes stopped drifting, and a cover plate no longer
+  buys a paid image generation.
 
 ### v0.5.0 — Serverless Instagram, image generation as configuration, an archive that deletes only what it filed (2026-08-20)
 
-Minor release. No new roles; thirteen active agents, unchanged.
-
-- **Instagram can publish without a server of your own.** A third backend joins
-  local and VPS: a Cloudflare Worker with its own database and a cron that fires
-  every minute. Nothing to rent, nothing to patch, and a failed slot announces
-  itself over Telegram within a minute instead of waiting for the next scheduled
-  wake — which is what the VPS path had to do, because a plan sitting on a
-  server is only reachable when something goes and fetches it. Worker state
-  answers over HTTP in a second, so it is fetched when someone needs it: right
-  before archiving, and never on a schedule. The database is treated as an
-  in-flight buffer rather than a store — once a day is archived its rows are
-  redundant and get purged, because the archived package and the local state
-  database already carry the same facts and more.
-- **Which image provider runs is configuration, not code.** Provider, model and
-  cost tier resolve from one config block at the moment of the call, with a
-  fallback that can actually run when the first choice fails. Requested sizes
-  are derived from the provider's own published constraint instead of a list
-  transcribed by hand — a list that had been wrong, describing three fixed sizes
-  for a model that accepts any size meeting a rule. Environments differ on
-  purpose: an agent environment with free native generation is forbidden from
-  making a paid call and stops to ask instead, because a paid call there buys
-  nothing.
-- **Archive closeout deletes only what it archived.** The copy step and the
-  byte-verify both honoured the retention list; the delete step did not, ending
-  in a blanket removal of the whole source folder. On a filtered run — closing
-  one account's work on a day that held two — that removed three approved
-  packages belonging to the other account and reported `residual_risk: none`.
-  Deletion is now scoped to what was copied and hash-verified, and a date whose
-  task queue still holds an unfinished contract is refused outright: closeout
-  removes working folders, and an open contract's files are exactly what it
-  would be removing.
-- **Publication evidence has to be about the file being published.** The
-  pre-branding quality gate fingerprinted the path recorded inside its own
-  report and compared it to the fingerprint recorded beside it — a
-  self-consistency check that never asked whether the report described the video
-  about to be branded. A re-rendered candidate therefore sailed through on
-  evidence about its predecessor. The gate now takes the actual input, and a new
-  step re-points evidence at a changed file without re-encoding it, so a
-  post-render edit no longer means rebuilding an approved montage to refresh a
-  checksum.
-- **Search stopped narrowing before it looked.** Queries had been carrying the
-  month name, binding themselves to a domain list, and using narrow English
-  trade terms — three filters applied to the question instead of to the answers,
-  which cost about 110 searches for three slots while the story that fit came
-  back from one broad query. Retrieval now asks broadly, in the audience's
-  language first, and filters the results. The multi-day domain cooldown is gone
-  entirely: on a closed set of primary sources the arithmetic is fatal — domains
-  divided by cooldown days is a hard ceiling — and it had been pushing an
-  account whose sources are the observatories themselves onto second-hand
-  rewrites of their own announcements.
-- **Smaller things that were quietly wrong.** Panning across a frame eased each
-  interval between measurements separately, and that easing has zero velocity at
-  both ends, so the pan stalled at every measurement and surged out of it: a
-  twenty-fold speed swing three times inside two and a half seconds. It
-  interpolates continuously now. Hook cards gained the four plate positions
-  their own documentation had been advertising without an implementation, plus a
-  measurement of how much of the subject a plate would cover. A publish guard
-  refuses to upload when it cannot prove the previous attempt did not already
-  succeed.
+- Instagram publishes without a server of your own, through a third backend.
+  Which image provider runs is configuration rather than code; archive
+  closeout deletes only what it filed; publication evidence has to be about
+  the file being published; and search stopped narrowing before it looked.
 
 ### v0.4.2 — The environment doctor runs again, montage fixes, engaged views (2026-08-12)
 
-Patch release. No new roles; thirteen active agents, unchanged.
-
-- **The environment doctor was dead and nobody knew.** It had not produced a
-  line of output since 2026-07-28, on ANY role: three checks in the config
-  hygiene scan returned results without the mandatory `state` field, and the
-  summary step read that field unconditionally, so the run ended in a bare
-  `KeyError` before printing anything. Four unit tests stayed green throughout
-  — they asserted the checker's own local shape and never passed its output
-  through the consumer that rejected it. Nobody noticed because a readiness
-  doctor is a first-install and a something-is-broken tool: on a machine that
-  already works there is no reason to run it, and the one path where it always
-  executes is the one nobody walks until a new operator does. Fixed at the
-  contract, and a violation now names the offending check instead of raising an
-  unexplained crash.
-- **Six montage defects that were being worked around by hand.** The
-  pre-branding QA report was written under one slug and looked for under
-  another, failing on correctly rendered packages for a week; a source-cut
-  contract could ship with an empty source path because the factory knew three
-  field names and the result carried a fourth; `--render-paths` pointed at the
-  wrong file resolved the output directory to the current working directory,
-  which always exists, so the guard waved it through; and the recorded
-  canonical checksum went stale whenever the metadata sanitize pass rewrote the
-  file after it was computed. A new `rehash-canonical` step refreshes that
-  checksum, keeps the previous value beside it, and does nothing when the file
-  has not changed.
-- **`engagedViews` is collected.** The metric was available on the existing
-  token and scope all along and had simply never been requested, so it reached
-  neither the snapshot store nor the analytics review. It is now asked for
-  alongside the core metrics — and, because an unknown metric name fails the
-  entire query rather than being dropped from the response, a rejection falls
-  back to the original three and fetches the new one separately. Views,
-  average duration and average percentage cannot be lost to it.
-- **First-run setup asks before it installs.** The bootstrap sequence used to
-  run a thirteen-role readiness check and install the video toolchain before
-  finding out what the operator produces, so an operator publishing only text
-  and photo posts waited through a CPU machine-learning install they would
-  never use. Setup now settles publish mode, accounts and content families
-  first, then checks the roles that profile needs, then installs only what it
-  needs. Git is documented as a precondition at every entry point — one of the
-  supported environments will not start a session outside a Git repository.
-  Python is no longer a manual prerequisite: it is installed per-user when
-  absent, and an interpreter that is already present is never upgraded,
-  replaced, or have its libraries changed without asking.
-- **The server question is asked only when something needs a server.** It used
-  to be asked at the end of every install regardless. The triggers are now
-  derived from what the operator already declared, the question is phrased as
-  the problem it solves rather than as infrastructure jargon, and when nothing
-  applies the setup says so in one line instead of asking.
-- **Operator instructions carried in a contract are not optional.** The field
-  that holds them was documented in one place as "recommended", with the only
-  statement about it being a restriction — so an agent could drop a montage or
-  card requirement and remain compliant. Reading it, applying it, and quoting
-  it back in the completion report are now stated where every role reads them.
+- The environment doctor was dead and nobody knew — it now runs and reports.
+  Six montage defects that were being worked around by hand are fixed,
+  `engagedViews` is collected, first-run setup asks before it installs, and
+  operator instructions carried in a contract stopped being optional.
 
 ### v0.4.1 — Profile post formats, search retrieval rules, corruption fixes (2026-08-09)
 
-Patch release. No new roles - thirteen active agents, as in v0.4.0.
-
-- **Profile-backed post formats are production-ready.** Message ceilings now
-  resolve per format instead of assuming a news post, with the platform cap
-  winning whenever it is lower than the format's own; the contract factory
-  accepts profile format labels; and `image_strategy` is read from the profile
-  rather than inferred from whether article images happen to be present. A
-  multi-card carousel is supported as what it is - a photo post with several
-  images, up to the platform maximum of ten.
-- **Search retrieval is specified.** The pipeline described result filtering in
-  detail and left retrieval itself undefined. It now states that a topic is not
-  a query: the subject is expanded into the vocabulary its own trade press uses
-  before anything is searched, freshness comes from the engine's date filter
-  rather than date words in the query text, and negative keyword operators are
-  out because precision belongs on the result set. A shortfall ladder makes
-  "no news exists" a conclusion available only after that expansion is worked
-  and a domain-breadth floor is met, and the report states which queries were
-  tried and which domains were checked.
-- **`excluded_domains`** - a new per-account hard reject, applied before ranking
-  in every source-pool mode including the shortfall path. Some genres clear
-  every content filter and are still wrong for an account; the domain is the
-  only handle on them.
-- **Six silent-corruption fixes** across montage, branding scope, analytics
-  cohort selection, and archive closeout - one class of defect, each producing
-  a wrong result while reporting success.
-- **Image fidelity end to end** - covers keep full 4:4:4 chroma with a light
-  unsharp pass on downscale at quality 95, and a feed derivative no longer
-  re-encodes a file that is already feed-safe. Archive closeout retains the
-  image generation log, so provider, model, and call count stay with the
-  package.
-- **Handoff prompts** reduced to a three-line shape, and the contract boundary
-  restated: the line is the package's life, not the task status, so finishing
-  your own unpublished work is completing the job rather than reopening a
-  contract.
+- Profile-backed post formats reached production: message ceilings, evidence
+  levels and the binding gate. Search retrieval is specified rather than
+  described, `excluded_domains` rejects per account before ranking, six
+  silent-corruption paths are closed, and handoff prompts are three lines.
 
 ### v0.4.0 — Designer + Copywriter roles, long-form Type 1, closeout runner (2026-07-31)
 
-- **Designer Agent (new role)** — video cover art as a dedicated role, on
-  operator-requested contracts only: YouTube preview `16:9` and Shorts
-  thumbnail `9:16`, with a binding HUD-plate text template, live-validated
-  safe zones, its own contract factory, and a per-format config block. One
-  variant per video, operator approval before the task closes.
-- **Copywriter Agent + Type 4 Source-Cut (new role + video family)** — donor
-  videos are mined into a state-DB topic registry (cut range, duration,
-  narration-ready context brief); factory-built serve contracts feed those
-  topics into a new Type 4 video family that cuts a segment from the source
-  instead of assembling clips. Reused footage routes to Facebook and
-  Instagram, never YouTube.
-- **Long-form Type 1 (41s+)** — a distinct scenario method for longer
-  verticals: multi-beat skeleton, montage deltas, a pre-TTS morphology and
-  stress checklist, and TTS alignment that survives finalize and patch.
-- **Search rework** — per-category candidate pools instead of one flat stack:
-  a single freshness window per account, playlist-scoped search areas defined
-  in operator config (never derived from a playlist description), pool modes
-  with an off-list fallback, entry points for sections search engines do not
-  index, and serve-time reachability checks. Serving draws only from
-  pool-backed categories, so an interactive session never pays for broad
-  discovery.
-- **Deterministic archive closeout** — one runner replaces hand-written
-  closeout: year/month/day archive layout, a publication-evidence gate that
-  resolves platform IDs across every publisher report shape, in-process
-  YouTube context backfill, byte-verified source-to-dest moves, and empty
-  shell cleanup. Plus a workspace janitor and a contact-sheet runner.
-- **Subject-lock reframe** — a `16:9` to `9:16` reframer that holds one scale
-  per clip with a locked subject X, replacing the unstable external tool on
-  the default vertical path.
-- **Image generation governance** — provider routing is fixed per artifact
-  class and dispatched by environment; configuration values are read at the
-  moment of the call rather than cached for a session; every generation
-  writes the parameters actually sent next to the config they resolved from,
-  so metered spend is visible in the artifacts instead of the monthly bill.
-- **Safety and contract hardening** — a factory now refuses to invent a
-  timezone (a missing one is a blocker, not a silent UTC drift); branding can
-  no longer shorten the narration tail; release-slot keys carry the conflict
-  family rather than the finer platform token; post packages enumerate in one
-  binding shape; cancelled slots delete their local files immediately.
-- **Pre-release rule review** — an independent read-only pass over the whole
-  rule set closed 74 findings (6 of them behaviour-changing conflicts) and
-  synchronised operator documentation with the shipped feature set.
+- Two new roles: the Designer for video cover art on request, and the
+  Copywriter mining donors into a topic registry for a new video family.
+  Plus long-form scenario method, per-category search pools, a deterministic
+  archive closeout runner and a subject-lock vertical reframe.
 
 ### v0.3.0 — Video DJ Agent + publish-now (2026-07-02)
 
-- **Video DJ Agent (new role)** — a config-gated, out-of-band 24/7 streaming
-  operator: drives a deployed server-side streaming engine (encoder + watchdog +
-  Facebook rolling supervisor) over YouTube continuous and Facebook
-  rolling/one-shot lives. Adds its own pipeline, queue convention, three
-  approved runtime engines, systemd examples, and an operator doc.
-- **Publish-now (immediate publication)** — publish a ready package immediately
-  on YouTube, Facebook video, Instagram Reels, and Instagram feed
-  (`publication_mode = immediate`, slot `now`): no schedule, no durable plan,
-  no VPS worker; Instagram runs a synchronous one-pass path.
-- **Instagram failed-slot recovery** — immediate republish handoff for missed
-  slots plus an R2 staging cleanup tool (verified deletes + DB resolution
-  states) and a closeout rule that mirrors the resolution into both plan copies.
-- **Media-ops bot resolution states** — recovered slots stop pinning
-  `/instagram` and `/pending` as "Needs attention"; only genuinely unresolved
-  failures stay flagged.
-- **record-manual-youtube** — Publisher recovery mode symmetric with
-  record-manual-facebook: verifies an operator-uploaded YouTube video via API
-  read-back and records it into publishing state.
-- **Slot-cancellation propagation** — a shared cancellation convention;
-  factories drop operator-cancelled slots from every downstream contract and
-  annul all-cancelled contracts.
-- **Facebook comment grounding** — published FB videos/reels are recorded into
-  a state table so Comment Agent grounds replies on the real subject.
-- **Consistency + de-leak sweep** — execution-mode default clarified
-  (`balanced` with a config override), metadata-schema doc parity with the
-  actual producer shape, retired pre-split files removed.
+- The Video DJ Agent: a config-gated, out-of-band 24/7 stream. Plus
+  publish-now for a ready package, Instagram failed-slot recovery, and a
+  shared slot-cancellation convention across the roles that touch a slot.
 
 ### v0.2.0 — Analytics Agent + search rewrite (2026-06-26)
 
-- **Analytics Agent (new role)** — a config-gated, out-of-band agent that reads
-  published-content performance (views, retention, engagement) across
-  YouTube/Facebook/Instagram and surfaces evidence-backed, per-frame causal
-  feedback to producers (second -> beat -> frame -> why). Adds its own pipeline,
-  convention, runtime collectors, state tables, and an optional Google-Sheets
-  export (off by default). Advisory only — never a publication gate.
-- **Search rewrite** — enforced source-domain diversity, two-pass discovery, and
-  a per-account `search.enabled` toggle to skip a destination from auto-search.
-- **Instagram Reels archive-reuse backlog driver** — schedule the oldest
-  unpublished archived Reels across N days from one command (account-parametric,
-  Reels-only, gate markers never fabricated).
-- **Scenario/Orchestrator validation gates** — deterministic narration-text gate,
-  pre-factory spec-link validation (cross-slot + reference-not-in-source),
-  grammatical-form check before applying TTS stress, and mandatory
-  stranded-contract reconciliation.
-- **Factory fixes** — Type 2 sources downloaded as H.264 at 1080p or below;
-  `creative_only` allowed for profile-backed evergreen fact cards.
-- **Repository hygiene** — the repository holds only working, implemented agents;
-  design drafts, plans, and R&D move to local handoff, not the repo.
+- The Analytics Agent: a config-gated, out-of-band pass that reads platform
+  metrics and writes a playbook the producers read before Type 1 and Type 2
+  work. Plus a search rewrite with enforced source-domain diversity and
+  deterministic validation gates between Scenario and Orchestrator.
 
 ### v0.1.2 — Scenario/Video Agent split (2026-06-19)
 
-- **Scenario/Video Agent split** — the former video edit agent is split into a
-  Scenario Agent (text: source understanding, narration, ElevenLabs TTS +
-  alignment, metadata; no clips, no vision) and a Video Agent (editor and sole
-  vision owner: scene detection, contact sheets, clip map, cut, framing/reframe,
-  audio mix, render). Narration (Gate 1) and audio (Gate 2) are Scenario-owned;
-  final video (Gate 3) is Video-owned.
-- **Factory is the single source of contracts** — drift is a blocker.
-- **Type 2 reference-remake matcher** rebuilt on local CLIP content-matching.
-- **Scale-to-fit vertical reframe** backend; vertical Shorts/Reels floor 12-15s.
-- **CRLF eliminated at the source**; montage-type-aware handoff validation.
-- **Free image-generation recovery** before any paid fallback.
+- The video edit agent splits into two roles: the Scenario Agent owns the
+  story, the narration and the voiceover; the Video Agent owns the montage
+  and the render. The factory becomes the single source of contracts.
 
 ### v0.1.1 — Multi-account video publishing (2026-06-12)
 
-- **Multi-account video** — one machine runs several brands/accounts. The
-  account is resolved from the destination; one contract = one account
-  (credential isolation). Per-account YouTube channel + token (with a
-  pre-upload channel assert so a video never lands on the wrong channel),
-  Facebook page, YouTube title hashtag suffix, playlist map, and branding.
-- **Account-first archive layout** (`<alias>/<date>`); shared post run
-  artifacts kept separate.
-- **Per-account default music track and TTS voice** (global when unset).
-- **New "publish operator-supplied finished video" contract**
-  (`operator_final`) — provide a ready local mp4 plus slot/platforms; the
-  agent prepares metadata and publishes, with no montage or voiceover.
-- **Fast mode** — publish without a separate QA agent, via an Orchestrator
-  inline preflight.
-- **Intent-based approval gates** (platform-content deletion stays strict).
+- One machine runs several brands: per-account channel, page, title suffix,
+  playlist map, branding, music and voice, with an account-first archive
+  layout. Plus a contract for publishing an operator-supplied finished video.
 
 ### v0.1.0 (2026-06-08)
 
@@ -1254,8 +1043,7 @@ Before a new feature is enabled, Architect should assess:
 The platform evolves like a content operating system:
 
 - **Codex SDK / Claude Agent SDK integration** — agents coordinate automatically: the operator sets a task and gets the result.
-- **Telegram as a new publication destination** alongside YouTube, Facebook, Instagram.
-- **Cloud Central State** — shared state in an external database (Cloudflare D1 or VPS) to work from several computers at once.
+- **A desktop application for Windows, macOS and Linux** — the same system with an interface of its own, built on that SDK: the operator sees the queue, the gates and the day instead of a chat.
 
 ## Security
 
