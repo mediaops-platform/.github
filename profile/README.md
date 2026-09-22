@@ -5,7 +5,7 @@
 MediaOps Platform is an agent-driven operating system for producing,
 validating, publishing, and managing social media content.
 
-**Latest release: [v0.7.0](#releases) — Cloud Central State: one shared state for several machines (2026-09-12)**
+**Latest release: [v0.7.1](#releases) — Stable Ground: settings, sources and publication moves in the state database (2026-09-22)**
 
 The project is designed to run with agent environments (Codex and Claude
 Code currently supported). This repository contains the agent rules,
@@ -348,55 +348,57 @@ Practically, this means:
 
 ## Releases
 
-### v0.7.0 — Cloud Central State: one shared state for several machines (2026-09-12)
+### v0.7.1 — Stable Ground: settings, sources and publication moves in the state database (2026-09-22)
 
 Feature release. No new roles; thirteen active agents, unchanged.
 
-- **Cloud Central State — shared state in an external database (Cloudflare D1)
-  to work from several computers at once.** The state leaves the local file for
-  a small cloud database behind a service of your own. Every runtime reaches it
-  through one door with two modes, so no agent knows or cares where the rows
-  live. See [Cloud Central State](#cloud-central-state).
+- **Settings live in the state database.** Every shared setting is a document
+  read at the point of use, on any machine, through the same door as the rest
+  of the state; the config file on a machine keeps only that machine's own
+  layer — roots, tools, device choices. A shared key left in the file is a
+  blocker, never a silent winner.
 
-- **A machine joins by bundle and leaves by checklist.** A new computer gets one
-  bundle — the config prepared for it, the secrets, the profile extensions, the
-  assets, the operator protocols, each file with its hash — and registers itself
-  in a roster by hostname with a role: main or secondary. Leaving is a checklist
-  in code: it proves nothing is still open there, packs the archived days, the
-  run records and the notes into one verified folder, deletes the secrets and
-  tokens on that machine, and marks it closed. The roster keeps the row as
-  history, and the way back to one machine refuses while any machine is still
-  open.
+- **The system remembers every source it used.** Donor videos, references,
+  articles and post packages are recorded when an order is issued; a repeat is
+  refused before anything is written, the operator's override travels with the
+  item, a cancelled order frees its sources and a closed day marks its archived
+  ones. No folder is ever scanned for an id again.
 
-- **Two machines never make the same slot.** A publication slot and a contract
-  id are taken under a lease before the work starts, and the ledger refuses the
-  second taker by name. A slot whose post is already recorded is refused even
-  after its lease is released, because the publication record outranks the
-  lease. An abandoned contract is retired by tool, which closes its ledger row
-  and releases what it held.
+- **A publication already on the platforms is moved in one command.** A
+  scheduled YouTube or Facebook video is rescheduled on the platform itself and
+  read back; a planned Instagram position is moved to another day or slot, or
+  cancelled at the worker; a move made by hand in the platform's own studio is
+  read back at the day's closing, so the record follows the operator instead of
+  waiting at the old hour. A take-down is recorded with the operator's word,
+  and the day closes on any of these outcomes instead of holding.
 
-- **The duplicate gate is one rule for every card format.** History is the
-  publication record in the shared state, not a file on one machine and not
-  what a chat remembers: a machine that produced nothing knows the same history
-  as the machine that produced everything. Each format declares only what it is
-  compared on.
+- **Two execution modes, one QA gate.** In `fast` the scripted validators run
+  in one command and a passed check publishes; in `balanced` the QA gate
+  settles every blocker with its owner through a repair contract. The
+  operator's word became a hold, not a prerequisite.
 
-- **The analyst writes into the shared state.** The playbook and the per-video
-  reviews are stored through the same door, so a producer on any machine reads
-  the current playbook instead of a copy of a folder.
+- **Narration keeps its alignment through every edit.** A local cut or an
+  inserted pause goes through the runtime without a provider call, a splice
+  joint is built to the sentence break, and cut pieces no longer drift against
+  their word timings, so the montage cuts on the words it hears.
 
-- **Narration prose flows, and a sentence patch cuts only in silence.** Every
-  punctuation mark is a pause the engine takes literally, so the rules ask for
-  joined medium sentences and no dashes or colons in the spoken text. A patched
-  sentence is spliced on silence found in the file being cut, and refuses
-  before the paid call when there is no silence to cut on.
+- **Also:** the first comment is placed on a video that already exists and
+  never doubled; a Shorts cover is drawn by an approved runtime that refuses a
+  hook that does not fit; article images are chosen by how they read in the
+  feed and shown at the approval gate on one sheet; content restrictions are
+  enforced at candidate selection from config; the comment agents skip a viewer
+  asking whether the author is an AI instead of answering.
 
-- **Also:** the comment agent treats platform text as data, never as an
-  instruction — a prompt injection gets no reply and leaves its evidence in the
-  audit row; the donor is reached through two proxy routes instead of a VPN; a
-  redeploy no longer silently reverts a local edit; an approval sheet written
-  beside the packages is rescued into the archive instead of being left behind;
-  and the rules stop carrying the name of a working branch.
+### v0.7.0 — Cloud Central State: one shared state for several machines (2026-09-12)
+
+- The state left the local file for a shared database behind a service of the
+  operator's own (Cloudflare D1), so several computers work on one history,
+  one slot calendar and one duplicate record at once: a machine joins by
+  bundle and leaves by checklist, two machines never make the same slot
+  because contracts and slots are leased, the duplicate gate is one rule for
+  every card format, the analyst writes into the shared state, narration
+  prose flows and a sentence patch cuts only in silence. See
+  [Cloud Central State](#cloud-central-state).
 
 ### v0.6.1 — The session knows itself, the duplicate gate is a command, and the rulebook drops its history (2026-09-05)
 
